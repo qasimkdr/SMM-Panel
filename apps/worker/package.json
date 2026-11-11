@@ -1,0 +1,21 @@
+{
+  "name": "@smm/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "build": "tsup src/index.ts --format esm --target node22 --clean --noExternal @smm/shared --noExternal @smm/db",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@smm/db": "workspace:*",
+    "@smm/shared": "workspace:*",
+    "bullmq": "^5.61.0",
+    "dotenv": "^17.2.0",
+    "ioredis": "^5.8.0",
+    "pino": "^10.0.0"
+  },
+  "devDependencies": { "pino-pretty": "^13.1.0", "tsup": "^8.5.0" }
+}

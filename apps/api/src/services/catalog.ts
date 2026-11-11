@@ -2,6 +2,7 @@ import { and, asc, eq, schema } from "@smm/db";
 import { applyDiscount } from "@smm/shared";
 import { db } from "../lib/db";
 import { cached, invalidate } from "../lib/cache";
+import { env } from "../env";
 
 export interface CatalogService {
   id: number;
@@ -69,7 +70,17 @@ export function getCatalog(): Promise<CatalogCategory[]> {
   });
 }
 
-export const invalidateCatalog = () => invalidate(KEY);
+/** Drops the cached catalog and asks the web app to refresh its ISR pages (fire-and-forget). */
+export async function invalidateCatalog() {
+  await invalidate(KEY);
+  if (env.REVALIDATE_SECRET)
+    void fetch(`${env.WEB_INTERNAL_URL}/revalidate`, {
+      method: "POST",
+      headers: { "x-revalidate-secret": env.REVALIDATE_SECRET, "Content-Type": "application/json" },
+      body: JSON.stringify({ paths: ["/services", "/"] }),
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null);
+}
 
 /** Applies a user's discount (VIP or custom) on top of the cached catalog — CPU only, no DB. */
 export function personalize(catalog: CatalogCategory[], discount: string | null): CatalogCategory[] {

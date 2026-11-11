@@ -2,7 +2,7 @@
 
 ## Stack
 - **Frontend:** Next.js (App Router, TypeScript) + Tailwind CSS + lucide-react icons
-- **Animation:** Motion (framer-motion) for fades and page transitions. CSS 3D transforms for the tilt/hover/active card effects. React Three Fiber only for the landing hero, lazy-loaded, never in the dashboard.
+- **Animation:** Motion for fades and page transitions. CSS 3D transforms for tilt, hover and press effects. The landing hero is a CSS 3D scene (no WebGL) for speed; React Three Fiber is allowed only if a future hero needs it, and must be lazy-loaded and never used in the dashboard.
 - **Backend:** Node.js + Express (TypeScript), stateless and horizontally scalable
 - **Database:** MySQL 8 (InnoDB) via Drizzle ORM
 - **Cache, queues, rate limits, pub/sub:** Redis + BullMQ
@@ -31,6 +31,20 @@
 - **Admin controls everything** from the admin dashboard (see FEATURES.md §12). No setting should require editing code or env files, except secrets.
 - **Hosting:** Cloudflare free plan in front (DNS, SSL, CDN, WAF, DDoS), with the app on one low-cost or free VPS using Docker Compose (see ARCHITECTURE.md §7). Must stay cheap until revenue grows.
 - **Frontend quality:** no compromises. Run the design skills on every screen.
+
+## Defaults chosen by the owner ("use your defaults")
+- **Brand:** placeholder name "Panel" (editable in admin settings `site.name`) until a domain is bought.
+- **Palette:** warm paper & ink neutrals + ember accent (`#c4461c` light / `#f07a4e` dark). See `docs/DESIGN_SYSTEM.md`.
+- **Language:** English at launch; structure ready for i18n later.
+- **Default global commission:** 20 %.
+- **Email:** Resend free tier for verification and password-reset emails.
+- **Sign-in:** email + password now; Google sign-in planned (setting `auth.googleEnabled`).
+- **Server:** start on Oracle Cloud Always Free, move to Hetzner when revenue allows.
+
+## How to run locally
+- Requirements: Node 22+, pnpm, MySQL 8, Redis.
+- `cp .env.example .env`, then `pnpm install && pnpm db:migrate && pnpm db:seed`.
+- `pnpm dev` starts web (:3000), api (:4000) and worker. Admin panel: http://admin.localhost:3000.
 
 ## Maintenance rule
 - Keep this file, `docs/FEATURES.md` and `docs/ARCHITECTURE.md` updated whenever the owner makes a new decision.

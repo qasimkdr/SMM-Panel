@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+/* Dark mode is class-based so the user's choice (light/dark/system) wins. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────── Design tokens ───────────────────────────
+   Warm "paper & ink" neutrals + one ember accent. Contrast checked:
+   ink/bg 15.9:1 · ink-3/bg 5.2:1 · white on accent 4.95:1 · dark: accent text 7:1 */
+:root {
+  --bg: #f6f5f2;
+  --bg-subtle: #efede8;
+  --surface: #ffffff;
+  --surface-2: #fbfaf8;
+  --line: #e6e3dc;
+  --line-strong: #d6d2c8;
+  --ink: #1b1a17;
+  --ink-2: #45423b;
+  --ink-3: #6b675f;
+  --accent: #c4461c;
+  --accent-hover: #ad3c16;
+  --accent-ink: #ffffff;
+  --accent-soft: #f8e6dd;
+  --accent-line: #efc6b3;
+  --success: #1c7c4f;
+  --success-soft: #e2f1e8;
+  --warning: #9a6312;
+  --warning-soft: #f7ecd6;
+  --danger: #c23a3a;
+  --danger-soft: #f8e1e0;
+  --info: #2a62c4;
+  --info-soft: #e1eaf8;
+
+  /* depth: layered, warm-tinted shadows (never pure black) */
+  --shadow-1: 0 1px 0 rgb(27 26 23 / 0.04), 0 1px 2px rgb(27 26 23 / 0.06);
+  --shadow-2: 0 1px 0 rgb(27 26 23 / 0.04), 0 4px 10px -2px rgb(27 26 23 / 0.08), 0 2px 4px -2px rgb(27 26 23 / 0.06);
+  --shadow-3: 0 2px 0 rgb(27 26 23 / 0.03), 0 18px 40px -12px rgb(27 26 23 / 0.22), 0 8px 16px -8px rgb(27 26 23 / 0.12);
+  --shadow-press: inset 0 1px 2px rgb(27 26 23 / 0.18);
+  --ring: 0 0 0 3px rgb(196 70 28 / 0.28);
+  --grain-opacity: 0.035;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0f0e0d;
+  --bg-subtle: #151413;
+  --surface: #1a1917;
+  --surface-2: #201f1c;
+  --line: #2b2926;
+  --line-strong: #3b3834;
+  --ink: #f2f0eb;
+  --ink-2: #c9c4ba;
+  --ink-3: #8e897f;
+  --accent: #f07a4e;
+  --accent-hover: #f48b63;
+  --accent-ink: #160b06;
+  --accent-soft: #2c1910;
+  --accent-line: #5a2f1d;
+  --success: #4cc38a;
+  --success-soft: #12261b;
+  --warning: #e0a54a;
+  --warning-soft: #2a2010;
+  --danger: #f07070;
+  --danger-soft: #2c1515;
+  --info: #6f9ef0;
+  --info-soft: #141f33;
+  --shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 6px 14px -4px rgb(0 0 0 / 0.6);
+  --shadow-3: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 24px 48px -16px rgb(0 0 0 / 0.8), 0 10px 20px -10px rgb(0 0 0 / 0.6);
+  --shadow-press: inset 0 2px 3px rgb(0 0 0 / 0.5);
+  --ring: 0 0 0 3px rgb(240 122 78 / 0.32);
+  --grain-opacity: 0.05;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-press: var(--shadow-press);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-fill: fill 2.8s var(--ease-out-soft) infinite;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+@keyframes fill {
+  0% { transform: scaleX(0.08); }
+  60%, 100% { transform: scaleX(1); }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); color: var(--ink); }
+  :focus-visible { outline: none; box-shadow: var(--ring); border-radius: 8px; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* Subtle paper grain — breaks the flat "generated" look. Pure CSS, no image request. */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─────────────────────────── 3D tilt card ───────────────────────────
+   JS writes --rx/--ry/--mx/--my; CSS does all the rendering on the GPU. */
+.tilt {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 50%;
+  --lift: 0px;
+  --press: 1;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--lift)) scale(var(--press));
+  transform-style: preserve-3d;
+  transition: transform 500ms var(--ease-out-soft), box-shadow 300ms var(--ease-out-soft);
+  will-change: transform;
+}
+.tilt[data-active="true"] {
+  --lift: -4px;
+  transition: transform 120ms linear, box-shadow 300ms var(--ease-out-soft);
+  box-shadow: var(--shadow-3);
+}
+.tilt[data-pressed="true"] {
+  --press: 0.985;
+  --lift: -1px;
+  transition: transform 90ms ease-out;
+}
+.tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background: radial-gradient(420px circle at var(--mx) var(--my), rgb(255 255 255 / 0.55), transparent 45%);
+  mix-blend-mode: soft-light;
+}
+.dark .tilt-glare { background: radial-gradient(420px circle at var(--mx) var(--my), rgb(255 255 255 / 0.10), transparent 45%); mix-blend-mode: normal; }
+.tilt[data-active="true"] .tilt-glare { opacity: 1; }
+.depth-1 { transform: translateZ(18px); }
+.depth-2 { transform: translateZ(36px); }
+.depth-3 { transform: translateZ(60px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .tilt { transform: none !important; }
+}

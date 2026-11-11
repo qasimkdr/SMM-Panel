@@ -20,6 +20,8 @@ const schema = z.object({
   ENCRYPTION_KEY: z.string().min(32),
   RESEND_API_KEY: z.string().optional().default(""),
   MAIL_FROM: z.string().default("Panel <no-reply@example.com>"),
+  REVALIDATE_SECRET: z.string().optional().default(""),
+  WEB_INTERNAL_URL: z.string().default("http://localhost:3000"),
   TRUST_PROXY: z.string().default("loopback, linklocal, uniquelocal"),
 });
 
