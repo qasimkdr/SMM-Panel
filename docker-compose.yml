@@ -1,0 +1,45 @@
+# Production-style stack for one VPS. Cloudflare (Tunnel or proxied DNS) sits in front of nginx.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-smm}
+      MYSQL_USER: ${MYSQL_USER:-smm}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
+    command: ["--innodb-buffer-pool-size=1G", "--max-connections=500"]
+    volumes: [mysql:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes: [redis:/data]
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    restart: unless-stopped
+    env_file: .env
+    depends_on: [mysql, redis]
+    deploy: { replicas: 2 }
+  worker:
+    build: { context: ., dockerfile: apps/worker/Dockerfile }
+    restart: unless-stopped
+    env_file: .env
+    depends_on: [mysql, redis]
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    restart: unless-stopped
+    env_file: .env
+    depends_on: [api]
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["80:80"]
+    volumes: ["./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+    depends_on: [web, api]
+volumes:
+  mysql: {}
+  redis: {}
