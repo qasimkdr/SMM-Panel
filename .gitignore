@@ -8,3 +8,7 @@ dist
 .turbo
 coverage
 .DS_Store
+
+# Local Redis/MySQL data
+dump.rdb
+*.rdb
