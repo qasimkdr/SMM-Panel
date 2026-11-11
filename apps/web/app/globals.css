@@ -39,6 +39,9 @@
   --shadow-press: inset 0 1px 2px rgb(27 26 23 / 0.18);
   --ring: 0 0 0 3px rgb(196 70 28 / 0.28);
   --grain-opacity: 0.035;
+  /* chart series (validated: CVD ΔE ≥ 26, contrast ≥ 3:1 on surface) */
+  --viz-1: #c4461c;
+  --viz-2: #2a78d6;
   color-scheme: light;
 }
 
@@ -72,6 +75,8 @@
   --shadow-press: inset 0 2px 3px rgb(0 0 0 / 0.5);
   --ring: 0 0 0 3px rgb(240 122 78 / 0.32);
   --grain-opacity: 0.05;
+  --viz-1: #d95926;
+  --viz-2: #3987e5;
   color-scheme: dark;
 }
 

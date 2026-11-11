@@ -1,4 +1,5 @@
 import { schema } from "@smm/db";
+import { PUBLIC_SETTINGS } from "@smm/shared";
 import { db } from "./db";
 import { cached, invalidate } from "./cache";
 
@@ -19,22 +20,5 @@ export async function getSetting<T>(key: string, fallback: T): Promise<T> {
 
 export const invalidateSettings = () => invalidate(KEY);
 
-/** Keys that are safe to expose to the public site. */
-export const PUBLIC_SETTING_KEYS = [
-  "site.name",
-  "site.tagline",
-  "site.brandColor",
-  "site.defaultTheme",
-  "site.maintenance",
-  "currency.default",
-  "auth.registrationOpen",
-  "auth.googleEnabled",
-  "features.affiliates",
-  "features.childPanels",
-  "features.api",
-  "features.addFunds",
-  "orders.massOrderEnabled",
-  "orders.dripfeedEnabled",
-  "seo.defaultTitle",
-  "seo.defaultDescription",
-];
+/** Keys that are safe to expose to the public site (from the shared registry). */
+export const PUBLIC_SETTING_KEYS = PUBLIC_SETTINGS;

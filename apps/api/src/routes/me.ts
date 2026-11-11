@@ -20,6 +20,7 @@ meRouter.get("/", async (req, res) => {
       email: schema.users.email,
       name: schema.users.name,
       role: schema.users.role,
+      permissions: schema.users.permissions,
       balance: schema.users.balance,
       spent: schema.users.spent,
       currency: schema.users.currency,

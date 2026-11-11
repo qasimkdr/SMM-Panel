@@ -114,16 +114,21 @@ export function getCatalog(): Promise<CatalogCategory[]> {
   });
 }
 
-/** Drops the cached catalog and asks the web app to refresh its ISR pages (fire-and-forget). */
+/** Asks the web app to refresh ISR pages (fire-and-forget). `layout` also refreshes the root layout. */
+export async function revalidateWeb(paths: string[], layout = false) {
+  if (!env.REVALIDATE_SECRET) return;
+  void fetch(`${env.WEB_INTERNAL_URL}/revalidate`, {
+    method: "POST",
+    headers: { "x-revalidate-secret": env.REVALIDATE_SECRET, "Content-Type": "application/json" },
+    body: JSON.stringify({ paths, layout }),
+    signal: AbortSignal.timeout(5000),
+  }).catch(() => null);
+}
+
+/** Drops the cached catalog and refreshes the public services pages. */
 export async function invalidateCatalog() {
   await invalidate(KEY, INDEX_KEY);
-  if (env.REVALIDATE_SECRET)
-    void fetch(`${env.WEB_INTERNAL_URL}/revalidate`, {
-      method: "POST",
-      headers: { "x-revalidate-secret": env.REVALIDATE_SECRET, "Content-Type": "application/json" },
-      body: JSON.stringify({ paths: ["/services", "/"] }),
-      signal: AbortSignal.timeout(5000),
-    }).catch(() => null);
+  await revalidateWeb(["/services", "/"]);
 }
 
 /** Applies a user's discount (VIP or custom) on top of the cached catalog — CPU only, no DB. */

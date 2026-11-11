@@ -11,6 +11,7 @@ export interface Me {
   email: string;
   name: string | null;
   role: "user" | "staff" | "admin";
+  permissions: string[] | null;
   balance: string;
   spent: string;
   currency: string;

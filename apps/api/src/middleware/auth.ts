@@ -2,6 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 import { env } from "../env";
 import { verifyAccess, type AccessClaims } from "../lib/jwt";
 import { forbidden, unauthorized } from "../lib/errors";
+import { eq, schema } from "@smm/db";
+import type { Permission } from "@smm/shared";
+import { db } from "../lib/db";
+import { cached } from "../lib/cache";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -53,4 +57,34 @@ export function sameOrigin(req: Request, _res: Response, next: NextFunction) {
   const allowed = [env.PUBLIC_DOMAIN, env.ADMIN_DOMAIN, new URL(env.WEB_URL).host].map((h) => h.toLowerCase());
   if (!allowed.includes(host)) throw forbidden("Cross-site request blocked");
   next();
+}
+
+/** Role + staff permissions, cached briefly (invalidated when an admin edits the user). */
+export function getAccess(userId: number) {
+  return cached(`user:${userId}:access`, 120, async () => {
+    const [u] = await db
+      .select({ role: schema.users.role, permissions: schema.users.permissions, status: schema.users.status })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+    return u ?? null;
+  });
+}
+
+/** Staff need the named permission; admins have all. Also re-checks role/ban from the DB (not just the token). */
+export function requirePerm(perm: Permission) {
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const a = await getAccess(req.auth!.userId);
+    if (!a || a.status !== "active" || a.role === "user") throw forbidden();
+    if (a.role !== "admin" && !(a.permissions ?? []).includes(perm)) throw forbidden(`You need the "${perm}" permission for this`);
+    next();
+  };
+}
+
+export function requireRoleAdmin() {
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const a = await getAccess(req.auth!.userId);
+    if (a?.role !== "admin") throw forbidden("Only admins can do this");
+    next();
+  };
 }

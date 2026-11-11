@@ -23,6 +23,7 @@ import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { useCurrency, useMe } from "@/lib/hooks/queries";
 import { useOrderStream } from "@/lib/hooks/orders";
+import { DashboardNotices } from "./notices";
 import { cn } from "@/lib/cn";
 
 export interface NavItem {
@@ -30,6 +31,8 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   soon?: boolean;
+  /** Section heading shown above the first item of each group. */
+  group?: string;
 }
 
 const userNav: NavItem[] = [
@@ -55,10 +58,13 @@ function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
   const pathname = useCleanPathname();
   return (
     <ul className="space-y-0.5">
-      {items.map((item) => {
+      {items.map((item, idx) => {
         const active = item.href === "/dashboard" || item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <li key={item.href}>
+            {item.group && item.group !== items[idx - 1]?.group && (
+              <p className={cn("mb-1 px-3 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-3", idx === 0 ? "mt-0" : "mt-5")}>{item.group}</p>
+            )}
             <Link
               href={item.href}
               onClick={onNavigate}
@@ -119,7 +125,7 @@ export function Shell({
         </Link>
         {badge && <span className="rounded-md bg-ink px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-bg">{badge}</span>}
       </div>
-      <nav aria-label="Dashboard" className="flex-1">
+      <nav aria-label="Dashboard" className="-mx-1 flex-1 overflow-y-auto px-1">
         <NavLinks items={nav} onNavigate={() => setOpen(false)} />
       </nav>
       <div className="space-y-3 border-t border-line pt-4">
@@ -173,6 +179,7 @@ export function Shell({
           {!badge && <LiveOrders />}
         </header>
         <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+          {!badge && <DashboardNotices />}
           {children}
         </main>
       </div>

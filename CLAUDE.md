@@ -57,6 +57,13 @@
 - Order validation lives in `packages/shared/src/orders.ts`; the web form and the API both use it.
 - Live order updates: publish to `orderChannel(userId)` in Redis; the API streams them over SSE (`/api/orders/stream`).
 - Fake provider test helper: `action=mock_set&order=<id>&status=Partial&remains=100`.
+- New admin setting = one entry in `SETTINGS` (packages/shared/src/settings.ts); the form and validation follow.
+- New admin route group = mount it in `routes/admin/index.ts` behind `requirePerm(<permission>)`, and add the nav item
+  with the same `perm` in `components/admin/admin-shell.tsx`.
+- Charts: use `components/admin/dashboard/charts.tsx` (inline SVG, real pixel width, one y-axis, table view). Series
+  colors are `--viz-1` / `--viz-2`; validate any new series color with the dataviz skill's validator in both modes.
+- All DB sessions run in UTC (`SET time_zone = '+00:00'` on every pooled connection).
+- When a big shell command trips the safety check, write files with the Write/Edit tools instead.
 
 ## Maintenance rule
 - Keep this file, `docs/FEATURES.md` and `docs/ARCHITECTURE.md` updated whenever the owner makes a new decision.

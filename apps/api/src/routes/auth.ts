@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { hash, verify } from "@node-rs/argon2";
 import { randomBytes } from "node:crypto";
 import { and, eq, gt, isNull, or, schema } from "@smm/db";
@@ -232,4 +233,16 @@ authRouter.post("/reset-password", ipLimit("reset", 10, 3600), async (req, res) 
   });
   await revokeAll(row.userId); // sign out everywhere after a reset
   res.json({ ok: true });
+});
+
+/** Exchanges a one-time admin "sign in as" token for a customer session. */
+authRouter.post("/impersonate", ipLimit("impersonate", 20, 3600), async (req, res) => {
+  if (requestScope(req) === "admin") throw forbidden();
+  const { token } = parse(z.object({ token: z.string().min(20).max(100) }), req.body);
+  const raw = await redis.getdel(`imp:${token}`); // single use
+  if (!raw) throw badRequest("This sign-in link has expired. Start again from the admin panel.");
+  const { userId, adminId } = JSON.parse(raw) as { userId: number; adminId: number };
+  await db.insert(schema.adminLogs).values({ actorId: adminId, action: "user.impersonate.used", targetType: "user", targetId: String(userId), ip: req.ip ?? null });
+  const session = await issueSession(req, res, { id: userId, role: "user" }, "user");
+  res.json({ ok: true, ...session });
 });

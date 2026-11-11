@@ -52,10 +52,26 @@
   shows in Admin → Orders for a manual resend/cancel (not auto-resent, to avoid double orders at the provider).
 - Local drip-feed emulation for providers without native drip-feed (currently only offered where the provider supports it).
 
-## Step 4: Admin control center
-- Users (search, balance, custom rates, ban, log in as user), orders management, reports dashboard
-- Settings (all keys editable), currencies, VIP tiers, content/SEO pages, announcements
-- Staff roles, audit log viewer, queue dashboard
+## ✅ Step 4: Admin control center (done)
+- Dashboard: revenue (after refunds), profit, orders, new customers for today and 7/30/90 days; revenue + profit line
+  chart (one $ axis, crosshair tooltip, legend + end labels, table view); orders-per-day bars; top services; alerts for
+  orders needing attention, manual queue and provider problems; customer balances held. Cached 60 s. Chart colors
+  validated for colorblind safety and contrast in light and dark (`--viz-1`, `--viz-2`).
+- Users: prefix search, filters (staff/admin/banned), detail panel with stats, balance add/deduct (ledger), VIP level
+  (auto or locked), personal discount, API access, email confirmed, private notes, ban with reason (signs out
+  everywhere, kills API key cache), sign out everywhere, "sign in as user" (one-time 60 s link, audited), balance
+  history, recent sign-ins; role + staff permissions (admins only)
+- Staff permissions: orders, users, catalog, pricing, content, settings, logs. Enforced per admin route against the DB
+  (a demoted account loses access immediately), and the admin menu hides what a staff member can't use.
+- Settings: one shared registry (`packages/shared/src/settings.ts`) drives the form and the validation; grouped
+  sections; unsaved-changes bar; public pages refresh when settings change. Maintenance mode pauses new orders and
+  shows a notice to customers.
+- Currencies: enable/disable, automatic vs manual rate (typing a rate switches to manual), "update rates now"
+- VIP levels: edit name, spend threshold, discount, color; customers re-assigned in one SQL update
+- Pages & notices: Terms/Privacy/Refund editor with preview (safe Markdown renderer, no HTML injection), published at
+  /terms, /privacy, /refund with ISR; notices as dashboard banners, one-time pop-ups or news, with start/end times
+- Activity log: every admin action, filterable by area, with details
+- axe: 0 WCAG AA violations on all new screens in light and dark
 
 ## Step 5: Growth features
 - Affiliates, coupons, notifications, support tickets, Google sign-in, 2FA

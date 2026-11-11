@@ -15,6 +15,10 @@ export function createDb(url = process.env.DATABASE_URL, poolSize = Number(proce
     supportBigNumbers: true,
     timezone: "Z",
   });
+  // All dates are UTC: stored TIMESTAMPs, NOW(), CURDATE() and DATE() groupings agree with JS.
+  pool.on("connection", (conn) => {
+    (conn as unknown as { query: (sql: string) => void }).query("SET time_zone = '+00:00'");
+  });
   const db = drizzle(pool, { schema, mode: "default" });
   return { db, pool };
 }

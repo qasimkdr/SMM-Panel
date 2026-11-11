@@ -53,6 +53,8 @@ export async function placeOrder(
   raw: unknown,
   opts: { viaApi?: boolean; idempotencyKey?: string | null; skipChecks?: boolean } = {},
 ): Promise<PlacedOrder> {
+  if (await getSetting("site.maintenance", false))
+    throw new HttpError(503, "maintenance", "We're doing maintenance. Ordering is paused for a few minutes.");
   if (!opts.skipChecks) await assertCanOrder(userId);
   const parsed = orderInputSchema.safeParse(raw);
   if (!parsed.success) {
