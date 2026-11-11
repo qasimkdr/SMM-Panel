@@ -25,12 +25,32 @@
 - Accessibility: axe scan (WCAG 2.1 AA) 0 violations on all admin screens in light and dark; dialogs trap focus,
   close on Esc and return focus to the trigger
 
-## ⏭️ Step 3: Orders (next)
+## ✅ Step 3: Orders (done)
+- Shared order rules for all 16 service types (`ORDER_FIELDS`, `normalizeOrder`), used by both the form and the API
+- Placing an order: server-side price (commission + VIP/custom discount), one transaction (order → row-locked debit →
+  ledger), idempotency keys (double-clicks/retries = one order), active-duplicate block, email-verified check
+- Worker: sends orders to providers (atomic claim so a cancel can't race it), backup-provider fallback, retries with
+  backoff; provider refusal → full refund; provider out of funds → "Needs attention" for the admin (customer not refunded
+  automatically, admin resends or cancels)
+- Status poller: 100 orders per provider call, oldest-checked first, never overlapping; partial/canceled refunds via
+  idempotent `settleOrder()` (never refunds twice); rolling average completion time per service
+- Refills (one per order per 24 h, within the refill period) and cancels (local + refund if not yet sent, otherwise
+  asked of the provider)
+- Live updates: Server-Sent Events, one Redis pattern subscription per API process fanned out to tabs
+- Customer UI: new order (search, platform chips, dynamic fields, drip-feed, live total, balance after), mass order,
+  orders page with status tabs, search, progress bars, refill/cancel, live updates; recent orders on the overview;
+  "Order" buttons on the services list; API key regenerate
+- Reseller API `/api/v2`: services, add, status (single/multi), refill (single/multi), refill_status, cancel, balance;
+  per-key limit 600/min; v2-style errors
+- Admin Orders: status tabs, manual queue, search, customer, charge/refund, profit, provider order ID, errors,
+  actions (in progress, complete, partial with refund, start count, resend, cancel and refund)
+- Tested: 20 simultaneous orders on a small balance → exactly as many succeed as the balance covers, never negative;
+  partial refund math; idempotent retries; v2 responses; axe 0 violations on all order screens
 
-- New order page (all service types, drip-feed), mass order
-- Order worker (send to provider, retries), batched status poller, automatic refunds
-- Live updates (SSE), orders page, refill and cancel
-- Reseller API `/api/v2`
+## Known follow-ups
+- An order claimed by the worker whose provider call crashed mid-flight stays "Processing" without a provider ID; it
+  shows in Admin → Orders for a manual resend/cancel (not auto-resent, to avoid double orders at the provider).
+- Local drip-feed emulation for providers without native drip-feed (currently only offered where the provider supports it).
 
 ## Step 4: Admin control center
 - Users (search, balance, custom rates, ban, log in as user), orders management, reports dashboard

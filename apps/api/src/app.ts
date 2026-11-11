@@ -14,6 +14,8 @@ import { authRouter } from "./routes/auth";
 import { meRouter } from "./routes/me";
 import { publicRouter } from "./routes/public";
 import { adminRouter } from "./routes/admin";
+import { ordersRouter } from "./routes/orders";
+import { v2Router } from "./routes/v2";
 
 export function createApp() {
   const app = express();
@@ -41,12 +43,16 @@ export function createApp() {
     res.json({ ok: true });
   });
 
+  // Reseller API v2: key-based auth, its own limits, no cookies/CSRF involved.
+  app.use("/api/v2", v2Router);
+
   const api = express.Router();
   api.use(sameOrigin);
   api.use(authenticate);
   api.use(rateLimit({ name: "global", limit: 300, windowSec: 60, key: (r) => r.auth?.sub ?? r.ip ?? "anon" }));
   api.use("/auth", authRouter);
   api.use("/me", meRouter);
+  api.use("/orders", ordersRouter);
   api.use("/admin", adminRouter);
   api.use("/", publicRouter);
   api.use(() => {

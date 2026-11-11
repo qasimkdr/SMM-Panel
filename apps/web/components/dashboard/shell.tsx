@@ -22,6 +22,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { useCurrency, useMe } from "@/lib/hooks/queries";
+import { useOrderStream } from "@/lib/hooks/orders";
 import { cn } from "@/lib/cn";
 
 export interface NavItem {
@@ -169,6 +170,7 @@ export function Shell({
             <Logo name={siteName} />
           </Link>
           <div className="flex flex-1 items-center justify-end gap-3">{!badge && <BalancePill />}</div>
+          {!badge && <LiveOrders />}
         </header>
         <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
           {children}
@@ -176,6 +178,12 @@ export function Shell({
       </div>
     </div>
   );
+}
+
+/** Mounted only in the customer dashboard: keeps order lists live. */
+function LiveOrders() {
+  useOrderStream();
+  return null;
 }
 
 function BalancePill() {

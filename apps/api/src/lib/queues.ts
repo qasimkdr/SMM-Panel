@@ -1,12 +1,18 @@
 import { Queue, QueueEvents } from "bullmq";
 import { Redis } from "ioredis";
 import { QUEUES, type ProviderJob } from "@smm/shared";
+
+export type OrderJob = { kind: "place"; orderId: number } | { kind: "refill"; refillId: number } | { kind: "cancel"; orderId: number };
 import { env } from "../env";
 import { HttpError } from "./errors";
 
 // BullMQ needs connections with maxRetriesPerRequest: null.
 const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 export const providerQueue = new Queue<ProviderJob>(QUEUES.provider, { connection });
+export const ordersQueue = new Queue<OrderJob>(QUEUES.orders, {
+  connection,
+  defaultJobOptions: { attempts: 5, backoff: { type: "exponential", delay: 15_000 }, removeOnComplete: 1000, removeOnFail: 5000 },
+});
 let events: QueueEvents | null = null;
 
 /**
@@ -27,6 +33,6 @@ export async function runProviderJob<T>(job: ProviderJob, timeoutMs = 45_000): P
 }
 
 export async function closeQueues() {
-  await Promise.allSettled([providerQueue.close(), events?.close()]);
+  await Promise.allSettled([providerQueue.close(), ordersQueue.close(), events?.close()]);
   connection.disconnect();
 }

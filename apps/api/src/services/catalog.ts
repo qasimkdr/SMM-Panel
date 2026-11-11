@@ -28,6 +28,50 @@ export interface CatalogCategory {
 }
 
 const KEY = "catalog:v1";
+const INDEX_KEY = "catalog:index:v1";
+
+/** Internal data the order path needs per service (never sent to customers). */
+export interface ServiceIndexEntry {
+  id: number;
+  name: string;
+  type: string;
+  mode: "auto" | "manual";
+  providerId: number | null;
+  providerRate: string | null;
+  sellRate: string;
+  minQty: number;
+  maxQty: number;
+  dripfeed: boolean;
+  cancel: boolean;
+  refill: boolean;
+  refillDays: number;
+}
+
+/** Active, orderable services keyed by id — cached like the catalog, so placing an order needs no catalog query. */
+export function getServiceIndex(): Promise<Record<string, ServiceIndexEntry>> {
+  return cached(INDEX_KEY, 24 * 3600, async () => {
+    const rows = await db
+      .select({
+        id: schema.services.id,
+        name: schema.services.name,
+        type: schema.services.type,
+        mode: schema.services.mode,
+        providerId: schema.services.providerId,
+        providerRate: schema.services.providerRate,
+        sellRate: schema.services.sellRate,
+        minQty: schema.services.minQty,
+        maxQty: schema.services.maxQty,
+        dripfeed: schema.services.dripfeed,
+        cancel: schema.services.cancel,
+        refill: schema.services.refill,
+        refillDays: schema.services.refillDays,
+      })
+      .from(schema.services)
+      .innerJoin(schema.categories, eq(schema.categories.id, schema.services.categoryId))
+      .where(and(eq(schema.services.status, "active"), eq(schema.categories.status, "active")));
+    return Object.fromEntries(rows.map((r) => [String(r.id), r]));
+  });
+}
 
 /**
  * The full public catalog, built once and kept in Redis. Rebuilt only when an admin edits
@@ -72,7 +116,7 @@ export function getCatalog(): Promise<CatalogCategory[]> {
 
 /** Drops the cached catalog and asks the web app to refresh its ISR pages (fire-and-forget). */
 export async function invalidateCatalog() {
-  await invalidate(KEY);
+  await invalidate(KEY, INDEX_KEY);
   if (env.REVALIDATE_SECRET)
     void fetch(`${env.WEB_INTERNAL_URL}/revalidate`, {
       method: "POST",

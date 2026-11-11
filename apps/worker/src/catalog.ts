@@ -2,7 +2,7 @@ import { connection, logger } from "./lib";
 
 /** Same cache key the API uses; dropping it forces a rebuild on next request. */
 export async function invalidateCatalog() {
-  await connection.del("catalog:v1");
+  await connection.del("catalog:v1", "catalog:index:v1");
   const secret = process.env.REVALIDATE_SECRET;
   const web = process.env.WEB_INTERNAL_URL ?? "http://localhost:3000";
   if (!secret) return;

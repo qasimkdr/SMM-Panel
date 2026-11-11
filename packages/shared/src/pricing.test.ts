@@ -32,3 +32,26 @@ test("discount and charge", () => {
 test("convert", () => {
   assert.equal(convert("10", "278.5"), "2785.00");
 });
+
+import { normalizeOrder, orderCharge, parseMassOrder } from "./orders";
+
+test("normalizeOrder: default service", () => {
+  const rule = { type: "default" as const, minQty: 100, maxQty: 1000, dripfeed: true };
+  assert.deepEqual(normalizeOrder({ service: 1, link: "https://x.com/a", quantity: 50 }, rule), {
+    ok: false,
+    errors: { quantity: "Quantity must be between 100 and 1,000" },
+  });
+  const ok = normalizeOrder({ service: 1, link: "https://x.com/a", quantity: 500, runs: 3, interval: 30 }, rule);
+  assert.equal(ok.ok && ok.order.totalQuantity, 1500);
+});
+
+test("normalizeOrder: custom comments count lines", () => {
+  const r = normalizeOrder({ service: 1, link: "https://x", comments: "nice\n\ngreat\nwow" }, { type: "custom_comments", minQty: 1, maxQty: 10, dripfeed: false });
+  assert.equal(r.ok && r.order.quantity, 3);
+});
+
+test("orderCharge + mass parse", () => {
+  assert.equal(orderCharge("default", "1.2", 2500), "3.000000");
+  assert.equal(orderCharge("package", "4.5", 1), "4.500000");
+  assert.deepEqual(parseMassOrder("5 | https://a | 100\n\n6|b|200")[1], { line: 2, raw: "6|b|200", service: 6, link: "b", quantity: 200 });
+});

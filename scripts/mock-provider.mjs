@@ -38,9 +38,29 @@ http
           return send({ ok: true, priceBump });
         case "add": {
           const id = nextOrder++;
-          orders.set(String(id), { status: "Pending", start: 1000, remains: Number(p.quantity ?? 0) });
+          if (p.service === "999") return send({ error: "Incorrect service ID" });
+          orders.set(String(id), { status: "Pending", start: 1000, remains: Number(p.quantity ?? 1) });
           return send({ order: id });
         }
+        case "mock_set": {
+          // Test helper: force an order's status, e.g. action=mock_set&order=5000&status=Partial&remains=100
+          const o = orders.get(String(p.order));
+          if (!o) return send({ error: "Incorrect order ID" });
+          if (p.status) o.status = p.status;
+          if (p.remains !== undefined) o.remains = Number(p.remains);
+          return send({ ok: true, order: o });
+        }
+        case "refill":
+          return orders.has(String(p.order)) ? send({ refill: Math.floor(Math.random() * 1e6) }) : send({ error: "Incorrect order ID" });
+        case "refill_status":
+          return send({ status: "Completed" });
+        case "cancel":
+          return send((p.orders ?? "").split(",").map((id) => {
+            const o = orders.get(id);
+            if (!o) return { order: Number(id), cancel: { error: "Incorrect order ID" } };
+            o.status = "Canceled";
+            return { order: Number(id), cancel: 1 };
+          }));
         case "status": {
           const one = (id) => {
             const o = orders.get(id);

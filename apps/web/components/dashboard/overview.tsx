@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpRight, CirclePlus, Crown, ListOrdered, MailWarning, Package, Wallet } from "lucide-react";
+import { ArrowUpRight, CirclePlus, Crown, MailWarning, Package, Wallet } from "lucide-react";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Stagger, StaggerItem } from "@/components/ui/reveal";
 import { PageHeader, Skeleton } from "./page-header";
+import { OrdersList } from "@/components/orders/orders-list";
 import { api } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { useCurrency, useMe } from "@/lib/hooks/queries";
@@ -97,13 +98,8 @@ export function Overview() {
               View all
             </Link>
           </div>
-          <div className="mt-6 grid place-items-center rounded-xl border border-dashed border-line-strong px-6 py-10 text-center">
-            <ListOrdered className="size-6 text-ink-3" aria-hidden />
-            <p className="mt-3 font-medium">No orders yet</p>
-            <p className="mt-1 max-w-xs text-sm text-ink-3">Your orders will show up here with live progress.</p>
-            <Link href="/dashboard/new-order" className={buttonClass("secondary", "sm", "mt-4")}>
-              Place your first order
-            </Link>
+          <div className="mt-4">
+            <OrdersList compact limit={5} />
           </div>
         </section>
         <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-5 shadow-1">

@@ -31,7 +31,7 @@ export interface CatalogCategory {
 }
 
 /** Client-side filtering over one cached payload: no API call per keystroke. */
-export function ServicesTable({ catalog, currency }: { catalog: CatalogCategory[]; currency?: Currency | null }) {
+export function ServicesTable({ catalog, currency, orderHref }: { catalog: CatalogCategory[]; currency?: Currency | null; orderHref?: (id: number) => string }) {
   const [query, setQuery] = useState("");
   const [platform, setPlatform] = useState<string>("all");
   const q = useDeferredValue(query.trim().toLowerCase());
@@ -109,6 +109,7 @@ export function ServicesTable({ catalog, currency }: { catalog: CatalogCategory[
                       <th className="px-4 py-2.5 text-right font-medium">Per 1,000</th>
                       <th className="px-4 py-2.5 text-right font-medium">Min / Max</th>
                       <th className="px-4 py-2.5 text-right font-medium">Avg. time</th>
+                      {orderHref && <th className="px-4 py-2.5"><span className="sr-only">Order</span></th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -145,6 +146,13 @@ export function ServicesTable({ catalog, currency }: { catalog: CatalogCategory[
                           {s.min.toLocaleString()} / {s.max.toLocaleString()}
                         </td>
                         <td className="px-4 py-3 text-right text-[13px] text-ink-2">{formatDuration(s.avgTimeSec)}</td>
+                        {orderHref && (
+                          <td className="px-4 py-3 text-right">
+                            <a href={orderHref(s.id)} className="inline-flex h-8 items-center rounded-[9px] border border-line-strong bg-surface px-3 text-[13px] font-medium shadow-1 transition-transform duration-200 hover:-translate-y-px active:translate-y-px">
+                              Order<span className="sr-only"> {s.name}</span>
+                            </a>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

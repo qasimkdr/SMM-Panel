@@ -1,20 +1,44 @@
-import Link from "next/link";
-import { CirclePlus } from "lucide-react";
+"use client";
+
+import { Suspense, useState } from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { buttonClass } from "@/components/ui/button";
+import { NewOrderForm } from "@/components/orders/new-order";
+import { MassOrderForm } from "@/components/orders/mass-order";
+import { cn } from "@/lib/cn";
 
 export default function NewOrderPage() {
+  const [tab, setTab] = useState<"single" | "mass">("single");
   return (
     <>
-      <PageHeader title="New order" description="Choose a service, paste your link and set a quantity." />
-      <div className="grid place-items-center rounded-[var(--radius-xl)] border border-dashed border-line-strong px-6 py-20 text-center">
-        <CirclePlus className="size-7 text-ink-3" aria-hidden />
-        <p className="mt-3 text-[17px] font-medium">Ordering opens with the next update</p>
-        <p className="mt-1 max-w-sm text-sm text-ink-3">You can already browse every service and its price.</p>
-        <Link href="/dashboard/services" className={buttonClass("secondary", "md", "mt-5")}>
-          Browse services
-        </Link>
-      </div>
+      <PageHeader
+        title="New order"
+        description="Choose a service, paste your link and set a quantity. You'll see the total before you pay."
+        actions={
+          <div role="tablist" aria-label="Order type" className="inline-flex rounded-xl bg-bg-subtle p-1">
+            {(["single", "mass"] as const).map((t) => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "h-9 rounded-lg px-4 text-[14px] font-medium transition-[background-color,box-shadow,color] duration-200",
+                  tab === t ? "bg-surface text-ink shadow-1" : "text-ink-3 hover:text-ink",
+                )}
+              >
+                {t === "single" ? "Single order" : "Mass order"}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      {tab === "single" ? (
+        <Suspense>
+          <NewOrderForm />
+        </Suspense>
+      ) : (
+        <MassOrderForm />
+      )}
     </>
   );
 }

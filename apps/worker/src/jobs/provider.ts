@@ -16,7 +16,7 @@ async function loadProvider(id: number) {
 }
 
 /** Converts a provider-currency amount to USD using our currency table (rate = units per 1 USD). */
-async function usdConverter(currency: string) {
+export async function usdConverter(currency: string) {
   if (currency === "USD") return (v: string) => fromMicros(toMicros(v));
   const [c] = await db.select().from(schema.currencies).where(eq(schema.currencies.code, currency)).limit(1);
   if (!c || Number(c.rate) <= 0) {

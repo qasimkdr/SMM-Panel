@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { eq, schema } from "@smm/db";
 import { updateProfileSchema } from "@smm/shared";
+import { randomBytes } from "node:crypto";
 import { db } from "../lib/db";
+import { redis } from "../lib/redis";
 import { notFound } from "../lib/errors";
 import { parse } from "../middleware/validate";
 import { requireUser } from "../middleware/auth";
@@ -56,4 +58,12 @@ meRouter.get("/api-key", async (req, res) => {
     .limit(1);
   res.set("Cache-Control", "private, no-store");
   res.json({ apiKey: row?.apiKey ?? null });
+});
+
+meRouter.post("/api-key/regenerate", async (req, res) => {
+  const [row] = await db.select({ apiKey: schema.users.apiKey }).from(schema.users).where(eq(schema.users.id, req.auth!.userId)).limit(1);
+  const apiKey = randomBytes(24).toString("hex");
+  await db.update(schema.users).set({ apiKey }).where(eq(schema.users.id, req.auth!.userId));
+  if (row?.apiKey) await redis.del(`apikey:${row.apiKey}`); // old key stops working immediately
+  res.json({ apiKey });
 });

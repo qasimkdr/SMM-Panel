@@ -52,6 +52,11 @@
 - Provider service lists are cached in Redis at `provider:{id}:catalog` (with USD-converted `rateUsd`).
 - Any catalog change must call `invalidateCatalog()` (drops Redis `catalog:v1` and revalidates ISR pages).
 - Run an axe scan (WCAG 2.1 AA) on new screens in light and dark; target 0 violations.
+- Money movements: `applyBalanceChange()` (packages/db/ledger.ts) inside a transaction; order refunds only via
+  `settleOrder()` (packages/db/orders.ts), which is idempotent.
+- Order validation lives in `packages/shared/src/orders.ts`; the web form and the API both use it.
+- Live order updates: publish to `orderChannel(userId)` in Redis; the API streams them over SSE (`/api/orders/stream`).
+- Fake provider test helper: `action=mock_set&order=<id>&status=Partial&remains=100`.
 
 ## Maintenance rule
 - Keep this file, `docs/FEATURES.md` and `docs/ARCHITECTURE.md` updated whenever the owner makes a new decision.

@@ -24,7 +24,7 @@ export default function DashboardServices() {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : (
-        <ServicesTable catalog={data ?? []} currency={currency} />
+        <ServicesTable catalog={data ?? []} currency={currency} orderHref={(id) => `/dashboard/new-order?service=${id}`} />
       )}
     </>
   );

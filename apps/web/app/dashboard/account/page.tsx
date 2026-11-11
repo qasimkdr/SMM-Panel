@@ -17,6 +17,15 @@ export default function AccountPage() {
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const key = useQuery({ queryKey: ["api-key"], queryFn: () => api<{ apiKey: string }>("/me/api-key"), enabled: showKey });
+  const [confirmRegen, setConfirmRegen] = useState(false);
+  const regen = useMutation({
+    mutationFn: () => api<{ apiKey: string }>("/me/api-key/regenerate", { method: "POST" }),
+    onSuccess: (d) => {
+      qc.setQueryData(["api-key"], d);
+      setShowKey(true);
+      setConfirmRegen(false);
+    },
+  });
 
   const save = useMutation({
     mutationFn: (body: { name?: string; currency?: string }) => api("/me", { method: "PATCH", json: body }),
@@ -124,6 +133,21 @@ export default function AccountPage() {
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
+          {confirmRegen ? (
+            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-warning-soft px-3.5 py-3 text-[14px] text-warning" role="alert">
+              <span className="flex-1">The current key stops working immediately. Update any panel that uses it.</span>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmRegen(false)}>
+                Keep key
+              </Button>
+              <Button variant="danger" size="sm" loading={regen.isPending} onClick={() => regen.mutate()}>
+                Make new key
+              </Button>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" className="mt-3" onClick={() => setConfirmRegen(true)}>
+              Regenerate key
+            </Button>
+          )}
         </section>
       </div>
     </>
