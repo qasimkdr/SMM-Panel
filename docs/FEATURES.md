@@ -302,3 +302,45 @@ Then P3: child panels, blog, subscriptions/auto-likes, automatic start-count fet
 * Buying followers or engagement violates the terms of service of most social platforms. Payment processors such as Stripe and PayPal often restrict or close SMM merchants, so plan for crypto and local gateways as backups.
 * Publish clear Terms and a refund policy (no refunds for drops after the refill period, and so on).
 * Keep the refill guarantee periods realistic and enforce them in code (refill button only within N days of completion).
+
+---
+
+## 11. Additional features (round 2)
+
+### Customer experience
+* Live order status updates (SSE). No page refresh.
+* Command palette (Ctrl/⌘ + K): jump to a service, order or page.
+* Recently used and favorite services; "re-order" button on past orders.
+* Platform link validation and auto-detection: paste a link and the panel suggests the platform and category.
+* Scheduled orders (start at a set date/time) **[P2]**.
+* Order export (CSV), order search by link.
+* Service badges: Refill, Cancel, Drip-feed, Real, Fast, New, Best seller; average time calculated from real orders.
+* "Updates" page generated automatically from syncs: new services, price changes, disabled services.
+* Spending levels / VIP tiers that unlock discounts automatically by total spend **[P2]**.
+* Balance transfer between users (optional, admin toggle) **[P3]**.
+* Onboarding tour for new users; empty states that guide the next step.
+* Notification center plus email preferences.
+* Account security: sessions list with remote logout, login alerts, 2FA, account deletion.
+* PWA (installable on phone), light/dark theme, multi-language with RTL.
+* Add funds: **"Coming soon" page for now** (admin manual top-up meanwhile).
+
+### Admin extras
+* Global admin search (user, order ID, link, payment ID).
+* User notes and tags, ban with reason, IP/device history, multi-account detection.
+* Manual balance add/deduct (essential while add funds is coming soon).
+* Price history per service; bulk price updates by category or provider.
+* Provider health score (error rate, speed); automatic switch to the backup provider.
+* Link and keyword blocklist (refuse orders for certain links).
+* Queue dashboard (Bull Board), system health, cache purge button, maintenance mode, feature flags.
+* Canned replies, ticket assignment, ticket rating.
+* Announcements: dashboard banner, popup modal, email broadcast.
+* Daily DB backups, with download from admin.
+
+### SEO & marketing site
+* Landing page, per-platform service pages, public services list, API docs, FAQ, blog **[P3]**, contact page.
+* JSON-LD, OpenGraph, sitemap, robots, canonical URLs; Core Web Vitals in the green.
+* GA4 / Meta Pixel / custom head-code slots.
+
+### Deferred (owner decision)
+* Payment gateways / add funds: coming soon.
+* Telegram bot and Telegram alerts: later.
