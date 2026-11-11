@@ -64,6 +64,12 @@
   colors are `--viz-1` / `--viz-2`; validate any new series color with the dataviz skill's validator in both modes.
 - All DB sessions run in UTC (`SET time_zone = '+00:00'` on every pooled connection).
 - When a big shell command trips the safety check, write files with the Write/Edit tools instead.
+- Emails: enqueue with `enqueueEmail()` (API) or `emailQueue` (worker); only the worker sends. Check
+  `wantsEmail(prefs, kind)` for non-security emails.
+- In-app notifications: `notify(db, { userId, kind, title, body, href })` from packages/db.
+- Affiliate commission is credited only inside `settleOrder()` (once per order, `orders.affiliate_credited`).
+- After each step, push to both the working branch and `main` (owner request).
+- Start local Redis from /tmp (or `CONFIG SET dir /tmp`) so `dump.rdb` never lands in the repo.
 
 ## Maintenance rule
 - Keep this file, `docs/FEATURES.md` and `docs/ARCHITECTURE.md` updated whenever the owner makes a new decision.

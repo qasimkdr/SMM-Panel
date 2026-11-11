@@ -16,6 +16,9 @@ import { publicRouter } from "./routes/public";
 import { adminRouter } from "./routes/admin";
 import { ordersRouter } from "./routes/orders";
 import { v2Router } from "./routes/v2";
+import { notificationsRouter, ticketsRouter } from "./routes/support";
+import { securityRouter } from "./routes/security";
+import { affiliatesRouter, childPanelsRouter, couponsRouter } from "./routes/growth";
 
 export function createApp() {
   const app = express();
@@ -53,6 +56,12 @@ export function createApp() {
   api.use("/auth", authRouter);
   api.use("/me", meRouter);
   api.use("/orders", ordersRouter);
+  api.use("/tickets", ticketsRouter);
+  api.use("/notifications", notificationsRouter);
+  api.use("/security", securityRouter);
+  api.use("/affiliates", affiliatesRouter);
+  api.use("/coupons", couponsRouter);
+  api.use("/child-panels", childPanelsRouter);
   api.use("/admin", adminRouter);
   api.use("/", publicRouter);
   api.use(() => {

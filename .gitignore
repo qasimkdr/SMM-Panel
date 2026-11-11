@@ -12,3 +12,5 @@ coverage
 # Local Redis/MySQL data
 dump.rdb
 *.rdb
+*.tsbuildinfo
+next-env.d.ts

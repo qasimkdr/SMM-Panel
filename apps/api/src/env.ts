@@ -22,6 +22,8 @@ const schema = z.object({
   MAIL_FROM: z.string().default("Panel <no-reply@example.com>"),
   REVALIDATE_SECRET: z.string().optional().default(""),
   WEB_INTERNAL_URL: z.string().default("http://localhost:3000"),
+  GOOGLE_CLIENT_ID: z.string().optional().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
   TRUST_PROXY: z.string().default("loopback, linklocal, uniquelocal"),
 });
 

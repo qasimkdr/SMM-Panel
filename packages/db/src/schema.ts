@@ -64,7 +64,10 @@ export const users = mysqlTable(
     apiEnabled: boolean("api_enabled").notNull().default(true),
     referralCode: varchar("referral_code", { length: 16 }).notNull(),
     referredBy: fk("referred_by"),
-    twoFactorSecret: varchar("two_factor_secret", { length: 128 }),
+    twoFactorSecret: varchar("two_factor_secret", { length: 255 }), // AES-GCM encrypted TOTP secret
+    twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
+    recoveryCodes: json("recovery_codes").$type<string[]>(), // SHA-256 hashes, one-time use
+    emailPrefs: json("email_prefs").$type<{ orders?: boolean; tickets?: boolean; news?: boolean }>(),
     emailVerifiedAt: timestamp("email_verified_at"),
     lastLoginAt: timestamp("last_login_at"),
     lastLoginIp: varchar("last_login_ip", { length: 45 }),
@@ -270,6 +273,7 @@ export const orders = mysqlTable(
     error: varchar("error", { length: 500 }),
     viaApi: boolean("via_api").notNull().default(false),
     idempotencyKey: varchar("idempotency_key", { length: 64 }),
+    affiliateCredited: boolean("affiliate_credited").notNull().default(false),
     scheduledAt: timestamp("scheduled_at"),
     completedAt: timestamp("completed_at"),
     lastCheckedAt: timestamp("last_checked_at"),
@@ -353,6 +357,20 @@ export const affiliatePayouts = mysqlTable(
     updatedAt: updatedAt(),
   },
   (t) => [index("aff_payouts_user_idx").on(t.userId, t.id), index("aff_payouts_status_idx").on(t.status)],
+);
+
+/** One row per order that earned a referrer commission (credited once, on completion). */
+export const affiliateEarnings = mysqlTable(
+  "affiliate_earnings",
+  {
+    id: id(),
+    referrerId: fk("referrer_id").notNull(),
+    userId: fk("user_id").notNull(),
+    orderId: fk("order_id").notNull(),
+    amount: money("amount").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("aff_earn_referrer_idx").on(t.referrerId, t.id), uniqueIndex("aff_earn_order_uq").on(t.orderId)],
 );
 
 export const affiliateVisits = mysqlTable(
@@ -488,6 +506,8 @@ export const childPanels = mysqlTable(
     price: money("price").notNull(),
     status: mysqlEnum("status", ["pending", "active", "suspended", "canceled"]).notNull().default("pending"),
     expiresAt: timestamp("expires_at"),
+    autoRenew: boolean("auto_renew").notNull().default(true),
+    notes: text("notes"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

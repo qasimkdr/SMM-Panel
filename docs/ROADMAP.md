@@ -73,9 +73,28 @@
 - Activity log: every admin action, filterable by area, with details
 - axe: 0 WCAG AA violations on all new screens in light and dark
 
-## Step 5: Growth features
-- Affiliates, coupons, notifications, support tickets, Google sign-in, 2FA
-- Child panels
+## ✅ Step 5: Growth features (done)
+- Support tickets: customers open/reply/close (max 10 open, rate-limited); admin inbox (oldest waiting first),
+  conversation view, saved replies, reply-and-close, reopen; new `support` staff permission
+- Notifications: in-app bell with unread count (order final states, ticket replies, affiliate commission, child
+  panels, payouts); emails through a worker-only queue (Resend, retries, 8/s limit) with per-customer preferences
+  (orders, tickets, news); admin manual order actions notify too
+- Affiliates: `/r/<code>` link (visit counted once per IP per day, code remembered 30 days), commission credited once
+  per order when it completes or partially completes, on the amount actually paid after refunds (inside the same
+  transaction as settlement); move to balance instantly or request a payout (admin approves/declines; declines
+  return the money); conditional UPDATE prevents double withdrawals
+- Promo codes: balance codes with total and per-customer limits and expiry; coupon row locked during redemption so
+  limits are exact under a rush; redeem box on Add funds; admin create/disable
+- Security: TOTP two-factor (built-in RFC 6238, verified against the official test vector), QR setup, 8 one-time
+  recovery codes (stored hashed), 2FA step on password and Google sign-in, disable needs password + code; signed-in
+  devices with remote sign-out; recent sign-ins; email preferences
+- Google sign-in: OAuth code flow with single-use state, links by verified email, creates accounts (keeps referral),
+  respects 2FA, ban and sign-up settings. Needs GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET and the setting turned on.
+- Child panels: order (first month charged in the same transaction), admin marks Live (30-day period starts),
+  daily renewal from balance or suspension at expiry with notifications; auto-renew toggle
+- Daily cleanup job: expired sessions/tokens and old read notifications
+- Tested end-to-end (referral → commission → payout race, coupon race, tickets, 2FA incl. recovery codes, sessions,
+  renewals/suspension); axe 0 violations on all new screens in light and dark; no horizontal scroll on phones
 
 ## Deferred
 - Payment gateways (add funds), Telegram bot/alerts

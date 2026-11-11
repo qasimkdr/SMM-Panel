@@ -6,3 +6,5 @@ export { recomputeSellRates, type RecomputeFilter } from "./pricing";
 export { encryptSecret, decryptSecret, maskSecret } from "./secrets";
 export { applyBalanceChange, adjustBalance, BalanceError, type BalanceChange, type TxType } from "./ledger";
 export { settleOrder, totalQuantity, type OrderUpdate } from "./orders";
+export { notify, wantsEmail, type NotifyInput, type NotificationKind } from "./notify";
+export { newTotpSecret, verifyTotp, otpauthUrl, newRecoveryCodes, totpCode } from "./totp";

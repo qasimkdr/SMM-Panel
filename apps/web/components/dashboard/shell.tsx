@@ -5,7 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  Boxes,
   CirclePlus,
+  Gift,
+  LifeBuoy,
+  ShieldCheck,
   LayoutDashboard,
   ListOrdered,
   LogOut,
@@ -16,7 +20,8 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { NotificationBell } from "./notification-bell";
 import { Logo } from "@/components/ui/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { api } from "@/lib/api";
@@ -36,12 +41,16 @@ export interface NavItem {
 }
 
 const userNav: NavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/new-order", label: "New order", icon: CirclePlus },
-  { href: "/dashboard/orders", label: "Orders", icon: ListOrdered },
-  { href: "/dashboard/services", label: "Services", icon: Package },
-  { href: "/dashboard/add-funds", label: "Add funds", icon: Wallet, soon: true },
-  { href: "/dashboard/account", label: "Account", icon: Settings },
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, group: "Orders" },
+  { href: "/dashboard/new-order", label: "New order", icon: CirclePlus, group: "Orders" },
+  { href: "/dashboard/orders", label: "Orders", icon: ListOrdered, group: "Orders" },
+  { href: "/dashboard/services", label: "Services", icon: Package, group: "Orders" },
+  { href: "/dashboard/add-funds", label: "Add funds", icon: Wallet, soon: true, group: "Account" },
+  { href: "/dashboard/support", label: "Support", icon: LifeBuoy, group: "Account" },
+  { href: "/dashboard/affiliates", label: "Affiliates", icon: Gift, group: "Account" },
+  { href: "/dashboard/child-panel", label: "Child panel", icon: Boxes, group: "Account" },
+  { href: "/dashboard/account", label: "Account", icon: Settings, group: "Account" },
+  { href: "/dashboard/security", label: "Security", icon: ShieldCheck, group: "Account" },
 ];
 
 /**
@@ -115,6 +124,15 @@ export function Shell({
   const [open, setOpen] = useState(false);
   const pathname = useCleanPathname();
   const logout = useLogout(logoutTo);
+  // Hide customer features the admin has switched off (affiliates, child panels).
+  const features = useQuery({ queryKey: ["public-settings"], queryFn: () => api<Record<string, unknown>>("/settings"), staleTime: 60_000, enabled: !badge });
+  const items = badge
+    ? nav
+    : nav.filter(
+        (n) =>
+          !(n.href === "/dashboard/affiliates" && features.data?.["features.affiliates"] === false) &&
+          !(n.href === "/dashboard/child-panel" && features.data?.["features.childPanels"] === false),
+      );
   useEffect(() => setOpen(false), [pathname]);
 
   const sidebar = (
@@ -126,7 +144,7 @@ export function Shell({
         {badge && <span className="rounded-md bg-ink px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-bg">{badge}</span>}
       </div>
       <nav aria-label="Dashboard" className="-mx-1 flex-1 overflow-y-auto px-1">
-        <NavLinks items={nav} onNavigate={() => setOpen(false)} />
+        <NavLinks items={items} onNavigate={() => setOpen(false)} />
       </nav>
       <div className="space-y-3 border-t border-line pt-4">
         <ThemeToggle />
@@ -175,7 +193,10 @@ export function Shell({
           <Link href={homeHref} aria-label="Home" className="lg:hidden">
             <Logo name={siteName} />
           </Link>
-          <div className="flex flex-1 items-center justify-end gap-3">{!badge && <BalancePill />}</div>
+          <div className="flex flex-1 items-center justify-end gap-2.5">
+            {!badge && <NotificationBell />}
+            {!badge && <BalancePill />}
+          </div>
           {!badge && <LiveOrders />}
         </header>
         <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">

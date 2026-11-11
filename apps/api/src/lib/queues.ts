@@ -13,6 +13,19 @@ export const ordersQueue = new Queue<OrderJob>(QUEUES.orders, {
   connection,
   defaultJobOptions: { attempts: 5, backoff: { type: "exponential", delay: 15_000 }, removeOnComplete: 1000, removeOnFail: 5000 },
 });
+/** Same shape the worker's email sender expects (apps/worker/src/mail.ts). */
+export interface EmailJob {
+  to: string;
+  subject: string;
+  title: string;
+  lines: string[];
+  cta?: { label: string; path: string };
+}
+export const emailQueue = new Queue<EmailJob>(QUEUES.emails, {
+  connection,
+  defaultJobOptions: { attempts: 4, backoff: { type: "exponential", delay: 30_000 }, removeOnComplete: 500, removeOnFail: 1000 },
+});
+export const enqueueEmail = (job: EmailJob) => emailQueue.add(job.subject.slice(0, 40), job).catch(() => null);
 let events: QueueEvents | null = null;
 
 /**
@@ -33,6 +46,6 @@ export async function runProviderJob<T>(job: ProviderJob, timeoutMs = 45_000): P
 }
 
 export async function closeQueues() {
-  await Promise.allSettled([providerQueue.close(), ordersQueue.close(), events?.close()]);
+  await Promise.allSettled([providerQueue.close(), ordersQueue.close(), emailQueue.close(), events?.close()]);
   connection.disconnect();
 }

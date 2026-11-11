@@ -12,6 +12,7 @@ import {
 import { connection, db, logger } from "../lib";
 import { driverFor, ProviderError, type AddOrderParams } from "../providers";
 import { usdConverter } from "./provider";
+import { notifyAffiliate, notifyOrderFinal } from "./notifications";
 
 export type OrderJob = { kind: "place"; orderId: number } | { kind: "refill"; refillId: number } | { kind: "cancel"; orderId: number };
 
@@ -97,7 +98,10 @@ async function place(orderId: number, job: Job) {
   if (permanent || lastAttempt) {
     // The provider refused it: cancel and refund in full so the customer isn't left waiting.
     const st = await db.transaction((tx) => settleOrder(tx, orderId, { status: "canceled", error: `Provider refused the order: ${msg}` }));
-    if (st) await publish(st.userId, { id: orderId, status: "canceled", remains: st.before.remains, startCount: null, refunded: st.refunded });
+    if (st) {
+      await publish(st.userId, { id: orderId, status: "canceled", remains: st.before.remains, startCount: null, refunded: st.refunded });
+      await notifyOrderFinal({ id: orderId, userId: st.userId, status: "canceled", refunded: st.refunded, serviceName: s.name }).catch(() => null);
+    }
     logger.warn({ orderId, msg }, "order canceled and refunded");
     return { canceled: true };
   }
@@ -217,6 +221,10 @@ export async function pollStatuses(maxOrders = 3000) {
         );
         changed++;
         await publish(o.userId, { id: o.id, status: next, remains: st.remains, startCount: st.startCount, refunded: res?.refunded });
+        if (FINAL_ORDER_STATUSES.includes(next) && !FINAL_ORDER_STATUSES.includes(o.status)) {
+          await notifyOrderFinal({ id: o.id, userId: o.userId, status: next, refunded: res?.refunded }).catch((err) => logger.warn({ err: String(err) }, "notify failed"));
+          if (res?.affiliate) await notifyAffiliate(res.affiliate.referrerId, res.affiliate.amount, o.id).catch(() => null);
+        }
         if (next === "completed") {
           const sec = Math.round((Date.now() - o.createdAt.getTime()) / 1000);
           // Rolling average completion time shown on the services list.

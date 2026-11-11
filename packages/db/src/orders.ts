@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { divRound, fromMicros, partialRefund, toMicros, FINAL_ORDER_STATUSES, type OrderStatus } from "@smm/shared";
 import type { Database } from "./client";
 import { applyBalanceChange } from "./ledger";
-import { orders } from "./schema";
+import { affiliateEarnings, orders, settings, users } from "./schema";
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
@@ -74,5 +74,33 @@ export async function settleOrder(tx: Tx, orderId: number, u: OrderUpdate) {
       spentDelta: fromMicros(-delta),
     });
   }
-  return { before: o, status, refunded: fromMicros(delta), userId: o.userId };
+  const affiliate = await creditAffiliate(tx, o, status, refunded);
+  return { before: o, status, refunded: fromMicros(delta), userId: o.userId, affiliate };
+}
+
+/**
+ * Affiliate commission, credited once when an order finishes with delivery (completed/partial),
+ * on what the customer actually paid after refunds. Atomic increment on the referrer's affiliate
+ * balance + an earnings row, inside the same transaction as the settlement.
+ */
+async function creditAffiliate(tx: Tx, o: typeof orders.$inferSelect, status: string, refundedMicros: bigint) {
+  if (o.affiliateCredited || (status !== "completed" && status !== "partial")) return null;
+  const [buyer] = await tx.select({ referredBy: users.referredBy }).from(users).where(eq(users.id, o.userId)).limit(1);
+  if (!buyer?.referredBy) return null;
+  const rows = await tx.select().from(settings).where(inArray(settings.key, ["features.affiliates", "affiliate.commissionPercent"]));
+  const conf = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  if (conf["features.affiliates"] === false) return null;
+  const pct = Number(conf["affiliate.commissionPercent"] ?? 0);
+  if (!(pct > 0)) return null;
+  const net = toMicros(o.charge) - refundedMicros;
+  if (net <= 0n) return null;
+  const amount = divRound(net * BigInt(Math.round(pct * 100)), 10_000n);
+  if (amount <= 0n) return null;
+  await tx.update(orders).set({ affiliateCredited: true }).where(eq(orders.id, o.id));
+  await tx
+    .update(users)
+    .set({ affiliateBalance: sql`${users.affiliateBalance} + ${fromMicros(amount)}` })
+    .where(eq(users.id, buyer.referredBy));
+  await tx.insert(affiliateEarnings).values({ referrerId: buyer.referredBy, userId: o.userId, orderId: o.id, amount: fromMicros(amount) });
+  return { referrerId: buyer.referredBy, amount: fromMicros(amount) };
 }

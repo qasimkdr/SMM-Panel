@@ -7,8 +7,19 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/input";
 import { PasswordField } from "./password-field";
+import { GoogleButton } from "./login-form";
 import { FormAlert } from "./form-alert";
 import { useForm } from "./use-form";
+
+/** Referral code saved by /r/[code] (valid 30 days), used if the sign-up link lost its ?ref. */
+function storedRef(): string | undefined {
+  try {
+    const v = JSON.parse(localStorage.getItem("ref") ?? "null") as { code: string; at: number } | null;
+    return v && Date.now() - v.at < 30 * 86_400_000 ? v.code : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -28,7 +39,7 @@ export function RegisterForm() {
             email: fd.get("email"),
             password: fd.get("password"),
             currency: fd.get("currency"),
-            referralCode: params.get("ref") ?? undefined,
+            referralCode: params.get("ref") ?? storedRef(),
             acceptTerms: fd.get("acceptTerms") === "on",
           },
           async (values) => {
@@ -39,6 +50,7 @@ export function RegisterForm() {
         );
       }}
     >
+      <GoogleButton label="Sign up with Google" refCode={params.get("ref")} />
       <FormAlert message={formError} />
       <Field name="username" label="Username" autoComplete="username" autoFocus error={errors.username} hint="Letters, numbers and underscores." />
       <Field name="email" type="email" label="Email" autoComplete="email" error={errors.email} />

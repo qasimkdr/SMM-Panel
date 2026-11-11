@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
-import { eq, inArray, schema, settleOrder, type SQL } from "@smm/db";
+import { eq, inArray, notify, schema, settleOrder, wantsEmail, type SQL } from "@smm/db";
+import { FINAL_ORDER_STATUSES } from "@smm/shared";
 import { db } from "../../lib/db";
 import { badRequest, notFound } from "../../lib/errors";
-import { ordersQueue } from "../../lib/queues";
+import { enqueueEmail, ordersQueue } from "../../lib/queues";
 import { parse } from "../../middleware/validate";
 import { listOrders, publishOrder, requestCancel } from "../../services/orders";
 import { audit } from "../../services/audit";
@@ -96,6 +97,13 @@ adminOrdersRouter.post("/:id/action", async (req, res) => {
   if (s) {
     const [after] = await db.select().from(schema.orders).where(eq(schema.orders.id, id)).limit(1);
     if (after) await publishOrder(after.userId, { id, status: after.status, remains: after.remains, startCount: after.startCount, refunded: s.refunded });
+    if (after && FINAL_ORDER_STATUSES.includes(after.status) && !FINAL_ORDER_STATUSES.includes(o.status)) {
+      const refunded = Number(s.refunded) > 0 ? ` $${Number(s.refunded).toFixed(2)} was returned to your balance.` : "";
+      const title = after.status === "completed" ? `Order #${id} completed` : after.status === "partial" ? `Order #${id} partly delivered` : `Order #${id} canceled`;
+      const body = after.status === "completed" ? "Your order has been delivered." : `${after.status === "partial" ? "Part of your order couldn't be delivered." : "Your order was canceled."}${refunded}`;
+      const u = await notify(db, { userId: after.userId, kind: "order", title, body, href: "/dashboard/orders" });
+      if (u && wantsEmail(u.prefs, "orders")) await enqueueEmail({ to: u.email, subject: title, title, lines: [`Hi ${u.username},`, body], cta: { label: "View your orders", path: "/dashboard/orders" } });
+    }
   }
   await audit(req, `order.${input.action}`, "order", id, input);
   res.json({ ok: true, refunded: s?.refunded ?? "0" });

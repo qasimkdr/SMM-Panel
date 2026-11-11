@@ -6,6 +6,7 @@ export const QUEUES = {
   orderStatus: "order-status",
   provider: "provider",
   maintenance: "maintenance",
+  emails: "emails",
 } as const;
 
 /** A service as returned by a provider, normalized (rates still in the provider's currency). */

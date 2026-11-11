@@ -72,6 +72,7 @@ export function useOrderStream() {
       });
       if (!found) qc.invalidateQueries({ queryKey: ["orders"] }); // a new order from another tab/API
       if (e.refunded && Number(e.refunded) > 0) qc.invalidateQueries({ queryKey: ["me"] });
+      if (["completed", "partial", "canceled"].includes(e.status)) qc.invalidateQueries({ queryKey: ["notifications"] });
     });
     return () => es.close();
   }, [qc]);

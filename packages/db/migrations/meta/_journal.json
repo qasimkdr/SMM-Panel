@@ -8,6 +8,20 @@
       "when": 1794422810255,
       "tag": "0000_skinny_crystal",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1794429118241,
+      "tag": "0001_tan_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1794429171212,
+      "tag": "0002_demonic_omega_red",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { Wallet, MessageSquare } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { TiltCard } from "@/components/ui/tilt-card";
+import { RedeemCode } from "@/components/growth/redeem-code";
 
 export default function AddFundsPage() {
   return (
@@ -19,9 +20,10 @@ export default function AddFundsPage() {
           for you.
         </p>
         <p className="mt-6 inline-flex items-center gap-2 text-[14px] text-ink-2">
-          <MessageSquare className="size-4" aria-hidden /> Contact support to top up your balance.
+          <MessageSquare className="size-4" aria-hidden /> Open a support ticket to top up your balance.
         </p>
       </TiltCard>
+      <RedeemCode />
     </>
   );
 }

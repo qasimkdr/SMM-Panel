@@ -5,6 +5,10 @@ import { refreshCurrencyRates } from "./jobs/currency-rates";
 import { runProviderJob, scheduleDueSyncs } from "./jobs/provider";
 import { ProviderError } from "./providers";
 import { pollRefills, pollStatuses, runOrderJob, type OrderJob } from "./jobs/orders";
+import { renewChildPanels } from "./jobs/child-panels";
+import { emailQueue, sendEmail, type EmailJob } from "./mail";
+import { db } from "./lib";
+import { sql } from "@smm/db";
 
 /**
  * Background workers. Only this process talks to provider APIs:
@@ -20,6 +24,8 @@ const statusQueue = new Queue(QUEUES.orderStatus, { connection });
 await maintenance.upsertJobScheduler("currency-rates", { pattern: "15 3 * * *" }, { name: "currency-rates" });
 await maintenance.upsertJobScheduler("provider-sync-due", { every: 10 * 60_000 }, { name: "provider-sync-due" });
 await statusQueue.upsertJobScheduler("poll-statuses", { every: Number(process.env.STATUS_POLL_MS ?? 60_000) }, { name: "poll-statuses", opts: { removeOnComplete: 10, removeOnFail: 50 } });
+await maintenance.upsertJobScheduler("child-panel-renewals", { pattern: "40 2 * * *" }, { name: "child-panel-renewals" });
+await maintenance.upsertJobScheduler("cleanup", { pattern: "10 4 * * *" }, { name: "cleanup" });
 await statusQueue.upsertJobScheduler("poll-refills", { every: 5 * 60_000 }, { name: "poll-refills", opts: { removeOnComplete: 10, removeOnFail: 50 } });
 
 const maintenanceWorker = new Worker(
@@ -28,6 +34,14 @@ const maintenanceWorker = new Worker(
     switch (job.name) {
       case "currency-rates":
         return refreshCurrencyRates();
+      case "child-panel-renewals":
+        return renewChildPanels();
+      case "cleanup":
+        // Housekeeping: expired sessions/tokens, old read notifications (keeps tables small and fast).
+        await db.execute(sql`DELETE FROM sessions WHERE expires_at < NOW() - INTERVAL 7 DAY`);
+        await db.execute(sql`DELETE FROM email_tokens WHERE expires_at < NOW() - INTERVAL 7 DAY`);
+        await db.execute(sql`DELETE FROM notifications WHERE read_at IS NOT NULL AND created_at < NOW() - INTERVAL 90 DAY`);
+        return { ok: true };
       case "provider-sync-due":
         return scheduleDueSyncs((id) =>
           providerQueue.add(
@@ -71,15 +85,18 @@ const statusWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
-for (const w of [maintenanceWorker, providerWorker, ordersWorker, statusWorker])
+// Emails: sent only here, with retries, so mail provider hiccups never touch web requests.
+const emailWorker = new Worker<EmailJob>(QUEUES.emails, (job) => sendEmail(job.data), { connection, concurrency: 5, limiter: { max: 8, duration: 1000 } });
+
+for (const w of [maintenanceWorker, providerWorker, ordersWorker, statusWorker, emailWorker])
   w.on("failed", (job, err) => logger.error({ queue: w.name, job: job?.name, err: err.message }, "job failed"));
 logger.info("worker started");
 
 void maintenance.add("currency-rates", {}, { jobId: "boot-currency-rates", removeOnComplete: true, removeOnFail: true });
 
 async function shutdown() {
-  await Promise.allSettled([maintenanceWorker.close(), providerWorker.close(), ordersWorker.close(), statusWorker.close()]);
-  await Promise.allSettled([maintenance.close(), providerQueue.close(), statusQueue.close()]);
+  await Promise.allSettled([maintenanceWorker.close(), providerWorker.close(), ordersWorker.close(), statusWorker.close(), emailWorker.close()]);
+  await Promise.allSettled([maintenance.close(), providerQueue.close(), statusQueue.close(), emailQueue.close()]);
   await Promise.allSettled([pool.end(), connection.quit()]);
   process.exit(0);
 }

@@ -100,6 +100,7 @@ export function validateSetting(def: SettingDef, value: unknown): { ok: true; va
 /** Staff permissions. Admins have all of them. */
 export const PERMISSIONS = [
   { value: "orders", label: "Orders" },
+  { value: "support", label: "Support tickets" },
   { value: "users", label: "Users and balances" },
   { value: "catalog", label: "Providers, services and categories" },
   { value: "pricing", label: "Commission and VIP levels" },
