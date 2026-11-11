@@ -344,3 +344,20 @@ Then P3: child panels, blog, subscriptions/auto-likes, automatic start-count fet
 ### Deferred (owner decision)
 * Payment gateways / add funds: coming soon.
 * Telegram bot and Telegram alerts: later.
+
+---
+
+## 12. Admin control center (everything controllable from the dashboard)
+* **Pricing:** a global markup % field (just type `25`); markup per provider, per category and per service; bulk apply; preview of cost → sell → profit before saving; rounding rules; price history.
+* **Providers:** add/edit (API URL, key, type v2/custom with field mapping), test connection, balance, sync interval, auto-disable rules, backup provider.
+* **Services/categories:** import, create manual services, edit, enable/disable, sort, badges, descriptions, refill/cancel flags, min/max, drip-feed.
+* **Users:** balance add/deduct, custom rates, VIP tier override, ban, notes, impersonate, API access on/off.
+* **VIP tiers:** create tiers (name, spend threshold, discount %, badge color); automatic upgrades.
+* **Affiliates:** commission %, minimum payout, cookie duration, approve payouts.
+* **Coupons and bonuses:** codes, amount or %, usage limits, expiry.
+* **Currencies:** enable/disable, default currency, automatic or manual rates, display format.
+* **Child panels:** price, enable/disable, manage tenants.
+* **Content:** landing page sections, pages (Terms/FAQ/Privacy), announcements, popups, SEO meta per page, head-code slots (analytics).
+* **Appearance:** logo, favicon, brand color, default theme.
+* **Settings:** sign-up on/off, email verification, CAPTCHA keys, SMTP/email provider, maintenance mode, rate limits, feature toggles (affiliates, child panels, mass order, API, drip-feed…).
+* **Operations:** queue dashboard, failed orders, system health, cache purge, backups, staff roles and audit log, reports (profit by service/provider/day).

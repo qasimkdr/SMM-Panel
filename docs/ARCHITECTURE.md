@@ -67,3 +67,27 @@ An SMM panel is a **money system**. Users have balances; orders debit them; refu
 * The three.js hero is lazy-loaded and only renders when visible, with a static fallback on low-end devices and with reduced motion.
 * Animations use only `transform`/`opacity`. Target Lighthouse 95+ and good Core Web Vitals.
 * SEO: Metadata API, OpenGraph images, `sitemap.xml`, `robots.txt`, canonical URLs, JSON-LD (Organization, Product/Service, FAQ, Breadcrumb), per-platform landing pages (e.g. `/instagram-services`), and an optional blog.
+
+## 7. Hosting on a near-zero budget (Cloudflare free + one VPS)
+Cloudflare's free plan **can't run this backend by itself**. Workers have per-request CPU limits and can't run long-lived Express servers, BullMQ workers, MySQL or Redis. So use:
+
+* **Cloudflare Free:** DNS, free SSL, CDN caching of static files and ISR pages, basic WAF, DDoS protection, "Under Attack" mode. Plus **Cloudflare Tunnel** (free), so the server exposes no open ports.
+* **One VPS running Docker Compose** (web + api + worker + mysql + redis + nginx):
+  * **Free:** Oracle Cloud "Always Free" ARM VM (up to 4 vCPU / 24 GB RAM). Downsides: sign-up can be hard and idle instances may be reclaimed.
+  * **Cheap and reliable (recommended once live):** Hetzner CX22 (about €4–5/month, 2 vCPU / 4 GB), or a similar Contabo/DigitalOcean box.
+* **Email:** a free tier from Resend (≈3,000/month) or Brevo (300/day) for verification and notification emails.
+* **Backups:** nightly MySQL dump to Cloudflare R2 (10 GB free).
+* **Scale path:** move MySQL to its own server, then add more api/worker containers. No code changes needed.
+
+## 8. Pricing engine (commission)
+```
+provider_rate (synced, USD per 1000)
+  └─ markup % = service.override ?? category.markup ?? provider.markup ?? settings.global_markup
+       sell_rate = provider_rate × (1 + markup/100)            ← rounded to 4 decimals
+            └─ user adjustments: custom rate for this user  OR  VIP tier discount %
+                 └─ displayed in the user's currency (rate cached in Redis)
+```
+* Manual services: the admin enters the sell rate directly. Markup is optional.
+* Final prices are precomputed into Redis (`catalog:v{n}`) whenever a markup, a rate or the catalog changes. The order endpoint charges the **server-side** price only; anything the client sends as a price is ignored.
+* Every order stores `provider_cost`, `charge` and `profit` for reports.
+* A price-change log keeps the history (who changed which markup, and when).
