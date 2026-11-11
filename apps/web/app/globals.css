@@ -5,7 +5,8 @@
 
 /* ─────────────────────────── Design tokens ───────────────────────────
    Warm "paper & ink" neutrals + one ember accent. Contrast checked:
-   ink/bg 15.9:1 · ink-3/bg 5.2:1 · white on accent 4.95:1 · dark: accent text 7:1 */
+   ink/bg 15.9:1 · ink-3/bg 5.2:1 · white on accent 4.95:1 · dark: accent text 7:1
+   Status/accent text on their -soft backgrounds is ≥ 4.5:1 (axe-verified). */
 :root {
   --bg: #f6f5f2;
   --bg-subtle: #efede8;
@@ -19,13 +20,14 @@
   --accent: #c4461c;
   --accent-hover: #ad3c16;
   --accent-ink: #ffffff;
+  --accent-text: #ad3c16; /* accent text on soft/tinted backgrounds (5:1+) */
   --accent-soft: #f8e6dd;
   --accent-line: #efc6b3;
-  --success: #1c7c4f;
+  --success: #187045;
   --success-soft: #e2f1e8;
-  --warning: #9a6312;
+  --warning: #85540f;
   --warning-soft: #f7ecd6;
-  --danger: #c23a3a;
+  --danger: #b03333;
   --danger-soft: #f8e1e0;
   --info: #2a62c4;
   --info-soft: #e1eaf8;
@@ -53,6 +55,7 @@
   --accent: #f07a4e;
   --accent-hover: #f48b63;
   --accent-ink: #160b06;
+  --accent-text: #f48b63;
   --accent-soft: #2c1910;
   --accent-line: #5a2f1d;
   --success: #4cc38a;
@@ -85,6 +88,7 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-accent-line: var(--accent-line);
   --color-success: var(--success);
@@ -126,6 +130,7 @@
 
 @layer base {
   html {
+    font-family: ui-sans-serif, system-ui, sans-serif;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
   }

@@ -9,13 +9,24 @@
 - Worker: BullMQ with daily currency-rate refresh
 - Deploy files: Docker Compose, Dockerfiles, nginx config for Cloudflare
 
-## ⏭️ Step 2: Providers & catalog (next)
-- Provider CRUD with encrypted keys, test connection, balance
-- API v2 driver + configurable custom driver
-- Import wizard (bulk by category) and scheduled sync with repricing
-- Admin services and categories management
+## ✅ Step 2: Providers & catalog (done)
+- Provider CRUD with AES-256-GCM encrypted keys (only last 4 chars ever shown), test connection, balance
+- Drivers: standard API v2 + configurable custom/"v3" driver (auth location, action/field names, wrapped lists, status map)
+- Provider calls happen only in the worker; the API queues a job and waits for the result (BullMQ)
+- Import wizard: browse the provider list by category, preview prices at your commission, import in bulk into the
+  provider's categories (auto-created, platform guessed) or one of yours
+- Scheduled sync per provider interval: updates costs and limits, hides services the provider removed, logs price
+  history, reprices with the commission engine, refreshes the public catalog; provider currency → USD conversion
+- Admin Services: filters, cursor pagination, cost/price/profit, commission source, visibility toggle, bulk show/hide,
+  move, commission and delete (services with orders are hidden instead), side-panel editor with price history,
+  manual (own) services with fixed prices
+- Admin Categories: drag to reorder, inline rename, platform icon, visibility, delete when empty
+- `scripts/mock-provider.mjs`: local fake API v2 provider for development
+- Accessibility: axe scan (WCAG 2.1 AA) 0 violations on all admin screens in light and dark; dialogs trap focus,
+  close on Esc and return focus to the trigger
 
-## Step 3: Orders
+## ⏭️ Step 3: Orders (next)
+
 - New order page (all service types, drip-feed), mass order
 - Order worker (send to provider, retries), batched status poller, automatic refunds
 - Live updates (SSE), orders page, refill and cancel

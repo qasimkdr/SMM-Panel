@@ -23,9 +23,12 @@ export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>("system");
 
   useEffect(() => {
+    let saved: Theme = "system";
     try {
-      setTheme((localStorage.getItem("theme") as Theme) || "system");
+      saved = (localStorage.getItem("theme") as Theme) || "system";
     } catch {}
+    setTheme(saved);
+    apply(saved); // safety net if anything re-rendered <html> after the head script ran
     const mq = matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
       let t: Theme = "system";

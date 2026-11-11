@@ -3,6 +3,7 @@ import { createApp } from "./app";
 import { logger } from "./lib/logger";
 import { pool } from "./lib/db";
 import { redis } from "./lib/redis";
+import { closeQueues } from "./lib/queues";
 
 const server = createApp().listen(env.PORT, () => logger.info(`API listening on :${env.PORT}`));
 server.keepAliveTimeout = 65_000; // longer than typical proxy idle timeouts
@@ -14,7 +15,7 @@ async function shutdown(signal: string) {
   closing = true;
   logger.info({ signal }, "shutting down");
   server.close(async () => {
-    await Promise.allSettled([pool.end(), redis.quit()]);
+    await Promise.allSettled([pool.end(), redis.quit(), closeQueues()]);
     process.exit(0);
   });
   setTimeout(() => process.exit(1), 10_000).unref();

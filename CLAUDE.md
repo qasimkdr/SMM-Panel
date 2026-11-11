@@ -45,6 +45,13 @@
 - Requirements: Node 22+, pnpm, MySQL 8, Redis.
 - `cp .env.example .env`, then `pnpm install && pnpm db:migrate && pnpm db:seed`.
 - `pnpm dev` starts web (:3000), api (:4000) and worker. Admin panel: http://admin.localhost:3000.
+- Fake provider for testing: `node scripts/mock-provider.mjs` → API URL `http://localhost:5055/api/v2`, key `test-key-123`.
+
+## Conventions
+- Admin actions that need a provider answer (test, load list, sync) queue a worker job and wait (`runProviderJob`).
+- Provider service lists are cached in Redis at `provider:{id}:catalog` (with USD-converted `rateUsd`).
+- Any catalog change must call `invalidateCatalog()` (drops Redis `catalog:v1` and revalidates ISR pages).
+- Run an axe scan (WCAG 2.1 AA) on new screens in light and dark; target 0 violations.
 
 ## Maintenance rule
 - Keep this file, `docs/FEATURES.md` and `docs/ARCHITECTURE.md` updated whenever the owner makes a new decision.

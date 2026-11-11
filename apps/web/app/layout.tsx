@@ -32,11 +32,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="grain min-h-dvh">
+      {/* Font classes live on <body>: React must never own <html class>, which holds the theme. */}
+      <body className={`${GeistSans.variable} ${GeistMono.variable} grain min-h-dvh`}>
         <Providers>{children}</Providers>
       </body>
     </html>

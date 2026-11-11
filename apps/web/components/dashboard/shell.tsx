@@ -40,8 +40,18 @@ const userNav: NavItem[] = [
   { href: "/dashboard/account", label: "Account", icon: Settings },
 ];
 
-function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
+/**
+ * On the admin host, pages are served from /admin/* via a rewrite: the server sees "/admin/pricing"
+ * while the browser shows "/pricing". Normalize so server and client render the same markup
+ * (a mismatch forces a full client re-render).
+ */
+export function useCleanPathname() {
   const pathname = usePathname();
+  return pathname.replace(/^\/admin(?=\/|$)/, "") || "/";
+}
+
+function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
+  const pathname = useCleanPathname();
   return (
     <ul className="space-y-0.5">
       {items.map((item) => {
@@ -96,7 +106,7 @@ export function Shell({
   logoutTo?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = useCleanPathname();
   const logout = useLogout(logoutTo);
   useEffect(() => setOpen(false), [pathname]);
 
@@ -155,6 +165,9 @@ export function Shell({
           <button onClick={() => setOpen(true)} aria-label="Open menu" className="grid size-10 place-items-center rounded-lg text-ink lg:hidden">
             <Menu className="size-5" />
           </button>
+          <Link href={homeHref} aria-label="Home" className="lg:hidden">
+            <Logo name={siteName} />
+          </Link>
           <div className="flex flex-1 items-center justify-end gap-3">{!badge && <BalancePill />}</div>
         </header>
         <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">

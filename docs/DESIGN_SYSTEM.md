@@ -14,7 +14,8 @@ All tokens live in `apps/web/app/globals.css` as CSS variables, mapped to Tailwi
 | `ink` / `ink-2` / `ink-3` | #1b1a17 / #45423b / #6b675f | #f2f0eb / #c9c4ba / #8e897f | Text: primary / secondary / muted |
 | `accent` | #c4461c (ember) | #f07a4e | Primary actions, focus, highlights |
 | `accent-soft` / `accent-line` | #f8e6dd / #efc6b3 | #2c1910 / #5a2f1d | Tinted backgrounds |
-| `success` `warning` `danger` `info` (+ `-soft`) | | | Order statuses and feedback |
+| `accent-text` | #ad3c16 | #f48b63 | Accent-colored **text** on tinted backgrounds (badges) |
+| `success` / `warning` / `danger` / `info` | #187045 / #85540f / #b03333 / #2a62c4 | #4cc38a / #e0a54a / #f07070 / #6f9ef0 | Statuses and feedback (each ≥ 4.5:1 on its `-soft` bg) |
 
 Contrast (WCAG AA): ink/bg 15.9:1, ink-3/bg 5.2:1, white on accent 4.95:1, dark-mode accent text 7:1.
 
@@ -43,7 +44,15 @@ Contrast (WCAG AA): ink/bg 15.9:1, ink-3/bg 5.2:1, white on accent 4.95:1, dark-
 | Badge | `components/ui/badge.tsx` | Tones: neutral, accent, success, warning, danger, info. |
 | Logo | `components/ui/logo.tsx` | Custom mark: two offset planes with an ember core. |
 | ThemeToggle | `components/theme-toggle.tsx` | Light / dark / system, applied before paint (no flash). |
+| Dialog | `components/ui/dialog.tsx` | `modal` (centered) or `sheet` (slides from the right). Focus trap, Esc, focus returns to the trigger, scroll lock. |
+| Switch | `components/ui/switch.tsx` | `role="switch"`, optional visible label/description or `hideLabel` with an accessible name. |
+| Select | `components/ui/select.tsx` | Styled native select with label/hint/error. |
+| Toast | `components/ui/toast.tsx` | `useToast()(message, tone)`; polite live region, errors use `role="alert"`. |
 | Shell | `components/dashboard/shell.tsx` | Sidebar with animated active indicator, mobile drawer, balance pill. Shared by the user and admin panels. |
+
+## Implementation rules learned
+- Never put React-managed `className` on `<html>`; the theme class lives there and must not be reset.
+- On the admin host, use `useCleanPathname()` (strips the internal `/admin` prefix) so server and client markup match.
 
 ## Do / don't
 | Do | Don't |
