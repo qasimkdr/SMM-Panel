@@ -100,7 +100,8 @@ Caddy gets free HTTPS certificates for both automatically.
 - No Cloudflare protection (CDN, DDoS shield): the server is reached directly on ports 80/443.
 - **No emails.** Resend can only send from a domain you own. Leave `RESEND_API_KEY` empty and turn **off**
   Admin → Settings → "Require email confirmation before ordering", or new customers can't order.
-  Password-reset emails won't work either; reset passwords for customers from the admin panel if needed.
+  Password-reset emails won't work either, so customers who forget their password need to contact you
+  (an admin "set new password" button isn't built yet).
 - Google sign-in works (use the DuckDNS address in Google Cloud).
 
 **Steps (instead of 5.1, 5.2, 5.5 and 5.7):**
