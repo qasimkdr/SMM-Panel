@@ -69,6 +69,8 @@ An SMM panel is a **money system**. Users have balances; orders debit them; refu
 * SEO: Metadata API, OpenGraph images, `sitemap.xml`, `robots.txt`, canonical URLs, JSON-LD (Organization, Product/Service, FAQ, Breadcrumb), per-platform landing pages (e.g. `/instagram-services`), and an optional blog.
 
 ## 7. Hosting on a near-zero budget (Cloudflare free + one VPS)
+
+Step-by-step instructions: **docs/DEPLOY.md**.
 Cloudflare's free plan **can't run this backend by itself**. Workers have per-request CPU limits and can't run long-lived Express servers, BullMQ workers, MySQL or Redis. So use:
 
 * **Cloudflare Free:** DNS, free SSL, CDN caching of static files and ISR pages, basic WAF, DDoS protection, "Under Attack" mode. Plus **Cloudflare Tunnel** (free), so the server exposes no open ports.

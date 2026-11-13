@@ -16,4 +16,9 @@ pnpm dev                      # web :3000 · api :4000 · worker
 - Admin panel: http://admin.localhost:3000 (seeded admin from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`)
 
 ## Production
-`docker compose up -d --build` on one VPS, with Cloudflare (free) in front. See `docs/ARCHITECTURE.md` §7.
+Follow **[docs/DEPLOY.md](docs/DEPLOY.md)**: free-tier go-live guide (Oracle Cloud Always Free + Cloudflare Tunnel + Resend), including which API keys you need.
+
+```bash
+cp deploy/env.production.example .env   # fill it in
+docker compose up -d --build
+```

@@ -69,6 +69,9 @@
 - In-app notifications: `notify(db, { userId, kind, title, body, href })` from packages/db.
 - Affiliate commission is credited only inside `settleOrder()` (once per order, `orders.affiliate_credited`).
 - After each step, push to both the working branch and `main` (owner request).
+- Production: `docker-compose.yml` (Cloudflare Tunnel, no public ports) + `deploy/env.production.example`;
+  API/worker image `deploy/Dockerfile.node`; guide in `docs/DEPLOY.md`. API/worker bundles keep npm packages external
+  (`tsup.config.ts`), so any package used by `@smm/db`/`@smm/shared` at runtime must also be a dependency of api/worker.
 - Start local Redis from /tmp (or `CONFIG SET dir /tmp`) so `dump.rdb` never lands in the repo.
 
 ## Maintenance rule

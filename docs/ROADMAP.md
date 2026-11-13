@@ -96,5 +96,13 @@
 - Tested end-to-end (referral → commission → payout race, coupon race, tickets, 2FA incl. recovery codes, sessions,
   renewals/suspension); axe 0 violations on all new screens in light and dark; no horizontal scroll on phones
 
+## ⏳ Step 6: Going live (in progress)
+- ✅ Deploy files: shared API/worker image (`deploy/Dockerfile.node`), web image, production `docker-compose.yml`
+  (MySQL, Redis, one-shot migrate+seed, 2 API replicas, worker, web, nginx, Cloudflare Tunnel; no public ports),
+  nginx config (validated with `nginx -t`), server setup script, nightly backup script (rclone off-site)
+- ✅ Production builds verified locally: API and worker bundles start and serve the live database
+- ✅ Go-live guide: `docs/DEPLOY.md` (free tier everywhere, API keys list, troubleshooting)
+- ⏭️ First real Docker build on the server, real provider and email tests, load test, automated tests for money paths
+
 ## Deferred
 - Payment gateways (add funds), Telegram bot/alerts

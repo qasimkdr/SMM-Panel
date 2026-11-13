@@ -1,45 +1,114 @@
-# Production-style stack for one VPS. Cloudflare (Tunnel or proxied DNS) sits in front of nginx.
+# Production stack for ONE server (Oracle Cloud Always Free / any VPS), behind Cloudflare Tunnel.
+# No ports are opened to the internet: cloudflared makes an outbound connection to Cloudflare,
+# and Cloudflare serves yourdomain.com and admin.yourdomain.com with free SSL.
+#
+#   cp deploy/env.production.example .env   # fill it in
+#   docker compose up -d --build
+#
+# See docs/DEPLOY.md for the full guide.
+
+x-app-env: &app-env
+  env_file: .env
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
 services:
   mysql:
     image: mysql:8.4
-    restart: unless-stopped
+    <<: *app-env
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-smm}
-      MYSQL_USER: ${MYSQL_USER:-smm}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
-    command: ["--innodb-buffer-pool-size=1G", "--max-connections=500"]
+      MYSQL_DATABASE: smm
+      MYSQL_USER: smm
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      TZ: UTC
+    command:
+      - --innodb-buffer-pool-size=${MYSQL_BUFFER_POOL:-2G}
+      - --max-connections=400
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --skip-name-resolve
     volumes: [mysql:/var/lib/mysql]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 10s
+      timeout: 5s
+      retries: 30
+
   redis:
     image: redis:7.4-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    <<: *app-env
+    # BullMQ needs noeviction; appendonly keeps queued jobs across restarts.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction", "--save", "300", "100"]
     volumes: [redis:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 10
+
+  # One-shot: apply database migrations and create the first admin, then exit.
+  migrate:
+    build: { context: ., dockerfile: deploy/Dockerfile.node, args: { APP: api } }
+    image: smm-api
+    env_file: .env
+    working_dir: /repo/packages/db
+    command: ["sh", "-c", "/repo/node_modules/.bin/tsx src/migrate.ts && /repo/node_modules/.bin/tsx src/seed.ts"]
+    depends_on:
+      mysql: { condition: service_healthy }
+    restart: "no"
+
   api:
-    build: { context: ., dockerfile: apps/api/Dockerfile }
-    restart: unless-stopped
-    env_file: .env
-    depends_on: [mysql, redis]
-    deploy: { replicas: 2 }
+    image: smm-api
+    <<: *app-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/ready"]
+      interval: 15s
+      retries: 5
+    deploy:
+      replicas: ${API_REPLICAS:-2}
+
   worker:
-    build: { context: ., dockerfile: apps/worker/Dockerfile }
-    restart: unless-stopped
-    env_file: .env
-    depends_on: [mysql, redis]
+    build: { context: ., dockerfile: deploy/Dockerfile.node, args: { APP: worker } }
+    image: smm-worker
+    <<: *app-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
   web:
-    build: { context: ., dockerfile: apps/web/Dockerfile }
-    restart: unless-stopped
-    env_file: .env
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        WEB_URL: ${WEB_URL:?set WEB_URL in .env}
+        ADMIN_DOMAIN: ${ADMIN_DOMAIN:?set ADMIN_DOMAIN in .env}
+        APP_NAME: ${APP_NAME:-Panel}
+    image: smm-web
+    <<: *app-env
     depends_on: [api]
+
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.27.5-alpine
     restart: unless-stopped
-    ports: ["80:80"]
     volumes: ["./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
     depends_on: [web, api]
+    # No public ports: Cloudflare Tunnel reaches nginx inside the Docker network.
+    # Uncomment only if you use proxied DNS to the server's IP instead of the tunnel:
+    # ports: ["80:80"]
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.10.0
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on: [nginx]
+
 volumes:
   mysql: {}
   redis: {}
