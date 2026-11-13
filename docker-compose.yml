@@ -101,14 +101,36 @@ services:
     # Uncomment only if you use proxied DNS to the server's IP instead of the tunnel:
     # ports: ["80:80"]
 
+  # ── How the internet reaches nginx: pick ONE with COMPOSE_PROFILES in .env ──
+  # COMPOSE_PROFILES=tunnel → your own domain on Cloudflare (recommended; no open ports)
   cloudflared:
     image: cloudflare/cloudflared:2025.10.0
+    profiles: [tunnel]
     restart: unless-stopped
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on: [nginx]
+
+  # COMPOSE_PROFILES=caddy → no domain yet (e.g. free DuckDNS name); free HTTPS via Let's Encrypt.
+  # Needs ports 80 and 443 open on the server.
+  caddy:
+    image: caddy:2.10-alpine
+    profiles: [caddy]
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on: [nginx]
 
 volumes:
   mysql: {}
   redis: {}
+  caddy_data: {}
+  caddy_config: {}

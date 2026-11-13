@@ -90,6 +90,35 @@ Database migrations and the first admin account are created automatically on eve
 
 ---
 
+## 4b. No domain yet? Free DuckDNS address
+
+You can go live without buying a domain, using a free permanent DuckDNS address:
+`https://yourpanel.duckdns.org` (customers) and `https://admin.yourpanel.duckdns.org` (admin).
+Caddy gets free HTTPS certificates for both automatically.
+
+**What's different from the domain setup:**
+- No Cloudflare protection (CDN, DDoS shield): the server is reached directly on ports 80/443.
+- **No emails.** Resend can only send from a domain you own. Leave `RESEND_API_KEY` empty and turn **off**
+  Admin → Settings → "Require email confirmation before ordering", or new customers can't order.
+  Password-reset emails won't work either; reset passwords for customers from the admin panel if needed.
+- Google sign-in works (use the DuckDNS address in Google Cloud).
+
+**Steps (instead of 5.1, 5.2, 5.5 and 5.7):**
+1. **duckdns.org** → sign in with Google or GitHub → type a name (e.g. `yourpanel`) → **add domain** → paste your
+   Oracle server's public IP into **current ip** → **update ip**. `admin.yourpanel.duckdns.org` works automatically.
+2. Oracle console → **Networking → Virtual cloud networks** → your VCN → **Subnets** → the public subnet →
+   **Security** (or Security Lists) → **Default Security List** → **Add Ingress Rules**, twice:
+   Source CIDR `0.0.0.0/0`, IP protocol **TCP**, destination port **80**; then the same for **443**.
+3. On the server: `./deploy/open-web-ports.sh` (opens 80/443 in the server's own firewall).
+4. In `.env`: `COMPOSE_PROFILES=caddy`, the three address lines with your DuckDNS name, `CLOUDFLARE_TUNNEL_TOKEN` empty.
+5. `docker compose up -d --build` as in 5.8. The first HTTPS certificate takes about a minute.
+
+**Moving to your own domain later (5 minutes):** buy the domain, do 5.1, 5.2, 5.5 and 5.7, then in `.env` set
+`COMPOSE_PROFILES=tunnel`, the tunnel token, your new domain in the three address lines and the Resend key, and run
+`docker compose up -d --build`. Optionally remove the 80/443 ingress rules afterwards.
+
+---
+
 ## 5. Step by step
 
 ### 5.1 Buy the domain

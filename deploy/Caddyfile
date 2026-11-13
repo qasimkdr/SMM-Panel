@@ -1,0 +1,16 @@
+# Used when you have NO domain on Cloudflare yet (COMPOSE_PROFILES=caddy), e.g. a free DuckDNS name.
+# Caddy gets free HTTPS certificates (Let's Encrypt) for both hosts automatically and renews them.
+# Needs ports 80 and 443 open on the server (see docs/DEPLOY.md "No domain yet").
+{
+	email {$SEED_ADMIN_EMAIL}
+}
+
+{$PUBLIC_DOMAIN}, {$ADMIN_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy nginx:80 {
+		# Pass the visitor's real IP the same way Cloudflare does, so rate limits and logs stay per-visitor.
+		header_up CF-Connecting-IP {remote_host}
+		# Live order updates (Server-Sent Events) must not be buffered.
+		flush_interval -1
+	}
+}
