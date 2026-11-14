@@ -19,7 +19,8 @@ const DEFAULT_SETTINGS: Record<string, unknown> = {
   "pricing.roundingDecimals": 4,
   "currency.default": "USD",
   "auth.registrationOpen": true,
-  "auth.requireEmailVerification": true,
+  // Without an email provider customers could never confirm, so start with confirmation off.
+  "auth.requireEmailVerification": Boolean(process.env.RESEND_API_KEY),
   "auth.googleEnabled": false,
   "orders.blockDuplicateActive": true,
   "orders.massOrderEnabled": true,

@@ -104,7 +104,14 @@ Caddy gets free HTTPS certificates for both automatically.
   (an admin "set new password" button isn't built yet).
 - Google sign-in works (use the DuckDNS address in Google Cloud).
 
-**Steps (instead of 5.1, 5.2, 5.5 and 5.7):**
+**Fastest way (works from a phone):** do steps 1–2 below, connect to the server (Termius app on a phone, or
+`ssh`), then run one command. It asks for your address, panel name and admin login, generates every secret, opens
+the ports and starts everything:
+```bash
+curl -fsSL https://raw.githubusercontent.com/qasimkdr/SMM-Panel/main/deploy/install.sh | bash
+```
+
+**Manual steps (instead of 5.1, 5.2, 5.5 and 5.7):**
 1. **duckdns.org** → sign in with Google or GitHub → type a name (e.g. `yourpanel`) → **add domain** → paste your
    Oracle server's public IP into **current ip** → **update ip**. `admin.yourpanel.duckdns.org` works automatically.
 2. Oracle console → **Networking → Virtual cloud networks** → your VCN → **Subnets** → the public subnet →
