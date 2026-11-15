@@ -29,6 +29,7 @@
   --warning-soft: #f7ecd6;
   --danger: #b03333;
   --danger-soft: #f8e1e0;
+  --danger-ink: #ffffff;
   --info: #2a62c4;
   --info-soft: #e1eaf8;
 
@@ -67,6 +68,7 @@
   --warning-soft: #2a2010;
   --danger: #f07070;
   --danger-soft: #2c1515;
+  --danger-ink: #1f0707;
   --info: #6f9ef0;
   --info-soft: #141f33;
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.5);
@@ -201,6 +203,62 @@
 .depth-1 { transform: translateZ(18px); }
 .depth-2 { transform: translateZ(36px); }
 .depth-3 { transform: translateZ(60px); }
+
+/* ─────────────────────────── WhatsApp (brand green, dark ink for 4.5:1+) ─────────────────────────── */
+:root { --wa: #25d366; --wa-ink: #062a13; --wa-tint: rgb(37 211 102 / 0.09); }
+.wa-card { background: var(--surface); }
+.wa-card-glow {
+  position: absolute;
+  inset: auto -30% -60% auto;
+  width: 80%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, var(--wa-tint), transparent);
+  pointer-events: none;
+}
+.wa-badge {
+  background: var(--wa);
+  color: var(--wa-ink);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), 0 10px 24px -10px rgb(37 211 102 / 0.65);
+}
+.wa-button {
+  background: var(--wa);
+  color: var(--wa-ink);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.3);
+  transition: transform 200ms var(--ease-out-soft), box-shadow 200ms var(--ease-out-soft);
+}
+.wa-button:hover { transform: translateZ(18px) translateY(-1px); box-shadow: 0 8px 20px -8px rgb(37 211 102 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.3); }
+.wa-button:active { transform: translateZ(18px) translateY(1px) scale(0.985); box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.25); }
+.wa-button:focus-visible, .wa-fab:focus-visible, a:focus-visible > .wa-fab { outline: 2px solid var(--ink); outline-offset: 3px; }
+.wa-fab {
+  background: var(--wa);
+  color: var(--wa-ink);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), 0 14px 30px -10px rgb(0 0 0 / 0.35), 0 6px 14px -6px rgb(37 211 102 / 0.6);
+  transition: transform 220ms var(--ease-spring);
+}
+.group:hover .wa-fab { transform: translateY(-3px) scale(1.05); }
+.group:active .wa-fab { transform: translateY(0) scale(0.93); transition-duration: 90ms; }
+.wa-fab-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--wa);
+  animation: wa-ring 2.6s var(--ease-out-soft) infinite;
+}
+/* Payment method tiles: lift on hover, press in, the mark pops forward when selected. */
+.method-tile { transition: transform 220ms var(--ease-out-soft), border-color 200ms, background-color 200ms, box-shadow 200ms; transform-style: preserve-3d; }
+.method-tile:hover { transform: perspective(700px) translateY(-2px) rotateX(4deg); box-shadow: var(--shadow-2); }
+.method-tile:active { transform: perspective(700px) translateY(0) scale(0.97); box-shadow: var(--shadow-press); transition-duration: 90ms; }
+.method-tile .method-mark { transition: transform 260ms var(--ease-spring); }
+.method-tile[data-selected="true"] .method-mark { transform: translateZ(14px) scale(1.06) rotate(-4deg); }
+.drop-zone { transition: border-color 200ms, transform 200ms var(--ease-out-soft); }
+.drop-zone:hover { transform: translateY(-1px); }
+.drop-zone:hover .drop-icon { transform: translateY(-2px); }
+.drop-icon { transition: transform 260ms var(--ease-spring); }
+@keyframes wa-ring {
+  0% { transform: scale(1); opacity: 0.55; }
+  70%, 100% { transform: scale(1.6); opacity: 0; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

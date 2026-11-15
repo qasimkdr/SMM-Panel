@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { verify } from "@node-rs/argon2";
-import { and, desc, eq, gt, isNull, newRecoveryCodes, newTotpSecret, otpauthUrl, schema, verifyTotp } from "@smm/db";
-import { emailPrefsSchema, twoFactorCodeSchema } from "@smm/shared";
+import { hash, verify } from "@node-rs/argon2";
+import { and, desc, eq, gt, isNull, ne, newRecoveryCodes, newTotpSecret, otpauthUrl, schema, verifyTotp } from "@smm/db";
+import { emailPrefsSchema, passwordSchema, twoFactorCodeSchema } from "@smm/shared";
 import { db } from "../lib/db";
 import { redis } from "../lib/redis";
 import { decrypt, encrypt, sha256 } from "../lib/crypto";
@@ -53,6 +53,25 @@ securityRouter.delete("/sessions/:id", async (req, res) => {
   const target = rows.find((r) => r.id.startsWith(prefix));
   if (!target) throw notFound("Session not found");
   await db.update(schema.sessions).set({ revokedAt: new Date() }).where(eq(schema.sessions.id, target.id));
+  res.json({ ok: true });
+});
+
+/** Change (or, for Google-only accounts, set) the password. Signs out every other device. */
+securityRouter.post("/password", perUser("pw-change", 10, 3600), async (req, res) => {
+  const input = parse(z.object({ currentPassword: z.string().max(128).optional(), newPassword: passwordSchema }), req.body);
+  const userId = req.auth!.userId;
+  const [u] = await db.select({ hash: schema.users.passwordHash }).from(schema.users).where(eq(schema.users.id, userId));
+  if (u?.hash) {
+    if (!input.currentPassword) throw badRequest("Please check the highlighted fields", { currentPassword: "Enter your current password" });
+    if (!(await verify(u.hash, input.currentPassword).catch(() => false))) throw badRequest("Please check the highlighted fields", { currentPassword: "That isn't your current password" });
+    if (await verify(u.hash, input.newPassword).catch(() => false)) throw badRequest("Please check the highlighted fields", { newPassword: "Choose a password you haven't used here" });
+  }
+  await db.update(schema.users).set({ passwordHash: await hash(input.newPassword) }).where(eq(schema.users.id, userId));
+  const token: string | undefined = req.cookies?.[cookieNames(requestScope(req)).refresh];
+  await db
+    .update(schema.sessions)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(schema.sessions.userId, userId), isNull(schema.sessions.revokedAt), ...(token ? [ne(schema.sessions.id, sha256(token))] : [])));
   res.json({ ok: true });
 });
 

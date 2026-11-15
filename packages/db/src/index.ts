@@ -8,3 +8,4 @@ export { applyBalanceChange, adjustBalance, BalanceError, type BalanceChange, ty
 export { settleOrder, totalQuantity, type OrderUpdate } from "./orders";
 export { notify, wantsEmail, type NotifyInput, type NotificationKind } from "./notify";
 export { newTotpSecret, verifyTotp, otpauthUrl, newRecoveryCodes, totpCode } from "./totp";
+export { approvePayment, rejectPayment, findBinancePayment, PaymentStateError, type BinanceMatch } from "./payments";

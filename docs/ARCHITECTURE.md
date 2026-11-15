@@ -93,3 +93,14 @@ provider_rate (synced, USD per 1000)
 * Final prices are precomputed into Redis (`catalog:v{n}`) whenever a markup, a rate or the catalog changes. The order endpoint charges the **server-side** price only; anything the client sends as a price is ignored.
 * Every order stores `provider_cost`, `charge` and `profit` for reports.
 * A price-change log keeps the history (who changed which markup, and when).
+
+## 9. Payments (deposits)
+* `payment_methods` (admin-edited) → `payments` (one row per deposit) → `transactions` (ledger, type `deposit`).
+* Flow: browser compresses the screenshot → `POST /api/payments/proof` (raw image, magic-byte checked, 4 MB cap,
+  stored in `payment_proofs`) → `POST /api/payments` (amount in the method's currency, converted to USD on the backend
+  with the currencies table) → pending → staff approve/reject (`approvePayment` / `rejectPayment`, packages/db).
+* `payments (gateway, external_id)` is unique, so a transaction ID can't be claimed twice; rejecting frees it.
+* Binance Pay: the API calls `GET /sapi/v1/pay/transactions` with the admin's read-only key (encrypted at rest) once
+  on submit, and again when staff press "Check Binance again". Only stablecoins are auto-credited.
+* nginx `client_max_body_size` is 6 MB for the screenshot upload; Express JSON stays at 256 KB.
+* The API clears the settings cache on start, so settings added by a deploy's seed show up immediately.

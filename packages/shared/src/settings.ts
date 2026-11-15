@@ -8,7 +8,7 @@ export type SettingKind = "text" | "textarea" | "boolean" | "number" | "percent"
 
 export interface SettingDef {
   key: string;
-  group: "General" | "Sign-up & security" | "Orders" | "Features" | "Affiliates" | "Child panels" | "SEO";
+  group: "General" | "Sign-up & security" | "Orders" | "Payments & support" | "Features" | "Affiliates" | "Child panels" | "SEO";
   label: string;
   help?: string;
   kind: SettingKind;
@@ -46,10 +46,14 @@ export const SETTINGS: SettingDef[] = [
   { key: "orders.dripfeedEnabled", group: "Orders", label: "Drip-feed", kind: "boolean", public: true },
   { key: "pricing.roundingDecimals", group: "Orders", label: "Price decimals shown", kind: "number", min: 2, max: 6 },
 
+  { key: "support.whatsapp", group: "Payments & support", label: "WhatsApp number", kind: "text", public: true, help: "With country code, digits only, e.g. 923001234567. Leave empty to hide the WhatsApp buttons." },
+  { key: "support.whatsappMessage", group: "Payments & support", label: "WhatsApp first message", kind: "text", public: true, help: "Pre-filled in the chat. The customer's username is added at the end." },
+  { key: "support.whatsappFloating", group: "Payments & support", label: "Floating WhatsApp button in the dashboard", kind: "boolean", public: true },
+
   { key: "features.api", group: "Features", label: "Reseller API (/api/v2)", kind: "boolean", public: true },
   { key: "features.affiliates", group: "Features", label: "Affiliate program", kind: "boolean", public: true },
   { key: "features.childPanels", group: "Features", label: "Child panels", kind: "boolean", public: true },
-  { key: "features.addFunds", group: "Features", label: "Add funds page", kind: "boolean", public: true, help: "Off shows \"Coming soon\" until payment methods are connected." },
+  { key: "features.addFunds", group: "Features", label: "Add funds page", kind: "boolean", public: true, help: "Off shows \"Coming soon\". Payment methods are managed under Payments." },
 
   { key: "affiliate.commissionPercent", group: "Affiliates", label: "Commission on referred spend", kind: "percent", help: "Type a number; it's a percentage." },
   { key: "affiliate.minPayout", group: "Affiliates", label: "Minimum payout (USD)", kind: "money" },
@@ -92,6 +96,11 @@ export function validateSetting(def: SettingDef, value: unknown): { ok: true; va
       if (s.length > max) return { ok: false, error: `Keep it under ${max} characters` };
       if (def.key === "currency.default" && !/^[A-Z]{3}$/.test(s)) return { ok: false, error: "Use a 3-letter currency code" };
       if (def.key === "site.name" && s.trim().length < 2) return { ok: false, error: "Enter a name" };
+      if (def.key === "support.whatsapp") {
+        const digits = s.replace(/[\s+()-]/g, "");
+        if (digits && !/^\d{8,15}$/.test(digits)) return { ok: false, error: "Use the full number with country code, e.g. 923001234567" };
+        return { ok: true, value: digits };
+      }
       return { ok: true, value: def.kind === "text" ? s.trim() : s };
     }
   }
@@ -106,6 +115,7 @@ export const PERMISSIONS = [
   { value: "pricing", label: "Commission and VIP levels" },
   { value: "content", label: "Pages and announcements" },
   { value: "settings", label: "Settings and currencies" },
+  { value: "payments", label: "Deposits and payment methods" },
   { value: "logs", label: "Activity log" },
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number]["value"];

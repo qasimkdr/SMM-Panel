@@ -5,6 +5,10 @@ import { pool } from "./lib/db";
 import { redis } from "./lib/redis";
 import { closeQueues } from "./lib/queues";
 import { closeLive } from "./services/live";
+import { invalidateSettings } from "./lib/settings";
+
+// A deploy may have run the seed (new settings); drop the cached copy so it's read fresh.
+void invalidateSettings().catch((e) => logger.warn({ err: e }, "could not clear settings cache"));
 
 const server = createApp().listen(env.PORT, () => logger.info(`API listening on :${env.PORT}`));
 server.keepAliveTimeout = 65_000; // longer than typical proxy idle timeouts

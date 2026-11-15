@@ -7,6 +7,7 @@ import { categoriesRouter, servicesRouter } from "./catalog";
 import { adminOrdersRouter } from "./orders";
 import { dashboardRouter } from "./dashboard";
 import { contentRouter, currenciesRouter, logsRouter, settingsRouter, vipRouter } from "./config";
+import { adminPaymentMethodsRouter, adminPaymentsRouter } from "../payments";
 import { adminTicketsRouter, cannedRouter } from "../support";
 import { adminAffiliatesRouter, adminChildPanelsRouter, adminCouponsRouter } from "../growth";
 
@@ -16,6 +17,8 @@ adminRouter.use(requireAdmin);
 adminRouter.use("/dashboard", dashboardRouter);
 adminRouter.use("/orders", requirePerm("orders"), adminOrdersRouter);
 adminRouter.use("/users", requirePerm("users"), adminUsersRouter);
+adminRouter.use("/payments", requirePerm("payments"), adminPaymentsRouter);
+adminRouter.use("/payment-methods", requirePerm("payments"), adminPaymentMethodsRouter);
 adminRouter.use("/providers", requirePerm("catalog"), providersRouter);
 adminRouter.use("/categories", requirePerm("catalog"), categoriesRouter);
 adminRouter.use("/services", requirePerm("catalog"), servicesRouter);

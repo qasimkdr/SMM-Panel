@@ -72,13 +72,23 @@
 - Production: `docker-compose.yml` (Cloudflare Tunnel, no public ports) + `deploy/env.production.example`;
   API/worker image `deploy/Dockerfile.node`; guide in `docs/DEPLOY.md`. API/worker bundles keep npm packages external
   (`tsup.config.ts`), so any package used by `@smm/db`/`@smm/shared` at runtime must also be a dependency of api/worker.
+- New permission `payments` (deposits + payment methods). Staff with `users` can set customer passwords only.
 - Start local Redis from /tmp (or `CONFIG SET dir /tmp`) so `dump.rdb` never lands in the repo.
 
 ## Maintenance rule
 - Keep this file, `docs/FEATURES.md` and `docs/ARCHITECTURE.md` updated whenever the owner makes a new decision.
 
+## Payments (owner decision)
+- Manual wallets: JazzCash, Easypaisa, SadaPay, NayaPay, Raast ID (account 03163273012, Muhammad Qasim), PKR.
+  Customer submits amount + transaction ID + screenshot; staff approve/reject in Admin → Payments.
+- Binance Pay: no merchant account. Optional read-only API key per method auto-confirms by Order ID
+  (`findBinancePayment` in packages/db/payments.ts). Non-stablecoin payments stay pending for review.
+- WhatsApp contact for top-ups: +923163273012 (setting `support.whatsapp`), card on Add funds + floating button.
+- Deposits are credited only via `approvePayment()` (idempotent, row lock, ledger type `deposit`).
+- Screenshots live in MySQL (`payment_proofs`, MEDIUMBLOB), compressed in the browser first; max 4 MB.
+
 ## Deferred for now
-- Add funds page: shows "Coming soon". Admins add balance manually meanwhile.
+- Card/crypto gateways with webhooks.
 - Telegram features (bot and alerts): not built yet (owner confirmed).
 
 See `docs/FEATURES.md` and `docs/ARCHITECTURE.md`.

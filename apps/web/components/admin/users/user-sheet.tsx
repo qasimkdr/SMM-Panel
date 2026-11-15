@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, LogOut, Minus, Percent, Plus, ShieldCheck } from "lucide-react";
+import { ExternalLink, History, KeyRound, LogOut, Minus, Percent, Plus, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { PasswordField } from "@/components/auth/password-field";
 import { PERMISSIONS } from "@smm/shared";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -101,6 +103,15 @@ export function UserSheet({ userId, onClose }: { userId: number; onClose: () => 
     onError: fail,
   });
 
+  const [newPassword, setNewPassword] = useState("");
+  const setPassword = useMutation({
+    mutationFn: () => api(`/admin/users/${userId}/password`, { method: "POST", json: { password: newPassword } }),
+    onSuccess: () => {
+      toast("Password changed. They were signed out everywhere.");
+      setNewPassword("");
+    },
+    onError: fail,
+  });
   const [banReason, setBanReason] = useState("");
   const [perms, setPerms] = useState<string[] | null>(null);
   const currentPerms = perms ?? u?.permissions ?? [];
@@ -117,6 +128,16 @@ export function UserSheet({ userId, onClose }: { userId: number; onClose: () => 
             {!u.emailVerifiedAt && <Badge tone="warning">Email not confirmed</Badge>}
             {!u.apiEnabled && <Badge>API off</Badge>}
           </div>
+
+          <Link
+            href={`/users/${u.id}`}
+            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-bg-subtle px-4 py-3 text-[14px] font-medium transition-[border-color,transform] hover:-translate-y-px hover:border-line-strong"
+          >
+            <span className="flex items-center gap-2">
+              <History className="size-4 text-ink-3" aria-hidden /> Full history: deposits, orders, balance, tickets, sign-ins
+            </span>
+            <span aria-hidden>→</span>
+          </Link>
 
           <dl className="grid grid-cols-3 gap-3 rounded-xl border border-line p-4 text-[13px]">
             {[
@@ -253,6 +274,26 @@ export function UserSheet({ userId, onClose }: { userId: number; onClose: () => 
                 <LogOut className="size-3.5" aria-hidden /> Sign out everywhere
               </Button>
             </div>
+            {(u.role === "user" || isAdmin) && (
+              <form
+                className="mt-2 grid gap-2 rounded-xl border border-line p-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setPassword.mutate();
+                }}
+              >
+                <PasswordField
+                  label="Set a new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  hint="At least 8 characters. Send it to the customer privately; they can change it under Password & security."
+                />
+                <Button type="submit" variant="secondary" size="sm" className="justify-self-start" loading={setPassword.isPending} disabled={newPassword.length < 8}>
+                  <KeyRound className="size-3.5" aria-hidden /> Save new password
+                </Button>
+              </form>
+            )}
             {u.status === "active" ? (
               <div className="mt-2 grid gap-2 rounded-xl border border-danger/25 p-4">
                 <Field label="Ban reason (shown to the user)" value={banReason} onChange={(e) => setBanReason(e.target.value)} placeholder="e.g. Chargeback on payment #123" />

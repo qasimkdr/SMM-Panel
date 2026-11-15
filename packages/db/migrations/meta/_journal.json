@@ -22,6 +22,13 @@
       "when": 1794429171212,
       "tag": "0002_demonic_omega_red",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1794738296719,
+      "tag": "0003_handy_ironclad",
+      "breakpoints": true
     }
   ]
 }

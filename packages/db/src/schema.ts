@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  customType,
   boolean,
   char,
   decimal,
@@ -83,6 +84,7 @@ export const users = mysqlTable(
     uniqueIndex("users_google_uq").on(t.googleId),
     index("users_referred_by_idx").on(t.referredBy),
     index("users_created_idx").on(t.createdAt),
+    index("users_name_idx").on(t.name),
   ],
 );
 
@@ -379,23 +381,83 @@ export const affiliateVisits = mysqlTable(
   (t) => [index("aff_visits_user_idx").on(t.userId, t.createdAt)],
 );
 
-/** Payments are deferred (add funds = coming soon) but the table exists for later gateways. */
+/** MEDIUMBLOB (up to 16 MB) for payment screenshots; kept in MySQL so backups and API replicas just work. */
+const mediumBlob = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "mediumblob" });
+
+/**
+ * Ways customers can pay, edited by admins. `manual`: customer sends money to the account shown and submits the
+ * transaction ID + screenshot for review. `binance_pay`: same, but the transaction ID is checked automatically
+ * against the admin's Binance Pay history (read-only API key) and credited without review when it matches.
+ */
+export const paymentMethods = mysqlTable(
+  "payment_methods",
+  {
+    id: id(),
+    name: varchar("name", { length: 64 }).notNull(),
+    kind: mysqlEnum("kind", ["manual", "binance_pay"]).notNull().default("manual"),
+    /** Shown as a colored mark next to the name (jazzcash, easypaisa, sadapay, nayapay, raast, binance, bank, other). */
+    brand: varchar("brand", { length: 24 }).notNull().default("other"),
+    currency: char("currency", { length: 3 }).notNull().default("USD"),
+    accountTitle: varchar("account_title", { length: 120 }),
+    accountNumber: varchar("account_number", { length: 128 }),
+    instructions: text("instructions"),
+    minAmount: decimal("min_amount", { precision: 18, scale: 2 }).notNull().default("1"),
+    maxAmount: decimal("max_amount", { precision: 18, scale: 2 }),
+    /** Binance Pay only: encrypted read-only API key and secret. */
+    apiKeyEnc: varchar("api_key_enc", { length: 512 }),
+    apiSecretEnc: varchar("api_secret_enc", { length: 512 }),
+    status: mysqlEnum("status", ["active", "disabled"]).notNull().default("active"),
+    sort: smallint("sort").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("payment_methods_sort_idx").on(t.status, t.sort)],
+);
+
+/**
+ * Deposits. `amount` is the USD credited; `amountLocal` + `currency` is what the customer says they sent.
+ * `externalId` is the transaction ID, unique per gateway so the same receipt can't be used twice.
+ */
 export const payments = mysqlTable(
   "payments",
   {
     id: id(),
     userId: fk("user_id").notNull(),
     gateway: varchar("gateway", { length: 32 }).notNull(),
+    methodId: fk("method_id"),
     amount: money("amount").notNull(),
+    amountLocal: decimal("amount_local", { precision: 18, scale: 2 }),
+    currency: char("currency", { length: 3 }).notNull().default("USD"),
     fee: money("fee").notNull().default("0"),
     bonus: money("bonus").notNull().default("0"),
     externalId: varchar("external_id", { length: 128 }),
-    status: mysqlEnum("status", ["pending", "completed", "failed", "refunded"]).notNull().default("pending"),
+    status: mysqlEnum("status", ["pending", "completed", "failed", "refunded", "rejected"]).notNull().default("pending"),
+    proofId: fk("proof_id"),
+    userNote: varchar("user_note", { length: 255 }),
+    adminNote: varchar("admin_note", { length: 255 }),
+    reviewedBy: fk("reviewed_by"),
+    reviewedAt: timestamp("reviewed_at"),
     meta: json("meta"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("payments_user_idx").on(t.userId, t.id), uniqueIndex("payments_ext_uq").on(t.gateway, t.externalId)],
+  (t) => [
+    index("payments_user_idx").on(t.userId, t.id),
+    index("payments_status_idx").on(t.status, t.id),
+    uniqueIndex("payments_ext_uq").on(t.gateway, t.externalId),
+  ],
+);
+
+export const paymentProofs = mysqlTable(
+  "payment_proofs",
+  {
+    id: id(),
+    userId: fk("user_id").notNull(),
+    mime: varchar("mime", { length: 32 }).notNull(),
+    data: mediumBlob("data").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("payment_proofs_user_idx").on(t.userId, t.id)],
 );
 
 /* ───────────────────────────── Support & content ───────────────────────────── */

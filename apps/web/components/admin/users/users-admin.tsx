@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
+import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Search, Users } from "lucide-react";
 import { PageHeader, Skeleton } from "@/components/dashboard/page-header";
@@ -14,6 +15,7 @@ interface UserRow {
   id: number;
   username: string;
   email: string;
+  name: string | null;
   role: "user" | "staff" | "admin";
   status: "active" | "banned";
   balance: string;
@@ -53,7 +55,7 @@ export function UsersAdmin() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Email, username or user ID"
+            placeholder="Name, email, username or user ID"
             className="h-10 w-full rounded-[10px] border border-line bg-surface pl-9 pr-3 text-[14px] shadow-1 focus:border-accent focus:shadow-[var(--ring)] focus:outline-none"
           />
         </label>
@@ -94,7 +96,11 @@ export function UsersAdmin() {
                       {u.username}
                     </button>
                     <p className="text-[12.5px] text-ink-3">
-                      {u.email} · #{u.id}
+                      {u.name ? `${u.name} · ` : ""}
+                      {u.email} · #{u.id} ·{" "}
+                      <Link href={`/users/${u.id}`} className="text-ink-2 underline-offset-2 hover:text-accent-text hover:underline">
+                        History
+                      </Link>
                     </p>
                   </td>
                   <td className="px-2 py-3">
@@ -125,7 +131,7 @@ export function UsersAdmin() {
           <div className="grid place-items-center px-6 py-14 text-center">
             <Users className="size-6 text-ink-3" aria-hidden />
             <p className="mt-3 font-medium">No users found</p>
-            <p className="mt-1 text-sm text-ink-3">Search by the start of an email or username.</p>
+            <p className="mt-1 text-sm text-ink-3">Search by the start of a name, email or username.</p>
           </div>
         )}
         {list.hasNextPage && (

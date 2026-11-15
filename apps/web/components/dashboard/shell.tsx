@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { WhatsAppFab } from "@/components/payments/whatsapp";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -36,6 +37,8 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   soon?: boolean;
+  /** Small counter (e.g. deposits waiting for review). */
+  count?: number;
   /** Section heading shown above the first item of each group. */
   group?: string;
 }
@@ -45,12 +48,12 @@ const userNav: NavItem[] = [
   { href: "/dashboard/new-order", label: "New order", icon: CirclePlus, group: "Orders" },
   { href: "/dashboard/orders", label: "Orders", icon: ListOrdered, group: "Orders" },
   { href: "/dashboard/services", label: "Services", icon: Package, group: "Orders" },
-  { href: "/dashboard/add-funds", label: "Add funds", icon: Wallet, soon: true, group: "Account" },
+  { href: "/dashboard/add-funds", label: "Add funds", icon: Wallet, group: "Account" },
   { href: "/dashboard/support", label: "Support", icon: LifeBuoy, group: "Account" },
   { href: "/dashboard/affiliates", label: "Affiliates", icon: Gift, group: "Account" },
   { href: "/dashboard/child-panel", label: "Child panel", icon: Boxes, group: "Account" },
   { href: "/dashboard/account", label: "Account", icon: Settings, group: "Account" },
-  { href: "/dashboard/security", label: "Security", icon: ShieldCheck, group: "Account" },
+  { href: "/dashboard/security", label: "Password & security", icon: ShieldCheck, group: "Account" },
 ];
 
 /**
@@ -87,6 +90,12 @@ function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
               <item.icon className={cn("size-[18px]", active ? "text-accent" : "text-ink-3 group-hover:text-ink-2")} aria-hidden />
               <span className="flex-1">{item.label}</span>
               {item.soon && <span className="rounded-full bg-bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-3">Soon</span>}
+              {!!item.count && (
+                <span className="min-w-5 rounded-full bg-accent px-1.5 py-0.5 text-center font-mono text-[11px] font-semibold text-accent-ink">
+                  {item.count > 99 ? "99+" : item.count}
+                  <span className="sr-only"> waiting</span>
+                </span>
+              )}
             </Link>
           </li>
         );
@@ -199,6 +208,7 @@ export function Shell({
           </div>
           {!badge && <LiveOrders />}
         </header>
+        {!badge && <WhatsAppFab />}
         <main id="main" className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
           {!badge && <DashboardNotices />}
           {children}

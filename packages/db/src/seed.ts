@@ -4,7 +4,7 @@ import { hash } from "@node-rs/argon2";
 import { eq } from "drizzle-orm";
 import { DEFAULT_CURRENCIES, DEFAULT_GLOBAL_MARKUP } from "@smm/shared";
 import { createDb } from "./client";
-import { currencies, settings, users, vipTiers, pages } from "./schema";
+import { currencies, paymentMethods, settings, users, vipTiers, pages } from "./schema";
 
 const { db, pool } = createDb(undefined, 2);
 
@@ -36,6 +36,9 @@ const DEFAULT_SETTINGS: Record<string, unknown> = {
   "seo.defaultTitle": "Panel — Social media growth services",
   "seo.defaultDescription": "Fast, reliable social media services with live order tracking, refill guarantees and an API for resellers.",
   "seo.headCode": "",
+  "support.whatsapp": "923163273012",
+  "support.whatsappMessage": "Hi, I want to add balance to my account.",
+  "support.whatsappFloating": true,
 };
 
 for (const [i, c] of DEFAULT_CURRENCIES.entries()) {
@@ -47,6 +50,32 @@ for (const [i, c] of DEFAULT_CURRENCIES.entries()) {
 
 for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
   await db.insert(settings).values({ key, value }).onDuplicateKeyUpdate({ set: { key } }); // never overwrite admin edits
+}
+
+// Starter payment methods (only the first time; admins edit them under Payments).
+const existingMethods = await db.select({ id: paymentMethods.id }).from(paymentMethods).limit(1);
+if (existingMethods.length === 0) {
+  const wallet = { kind: "manual" as const, currency: "PKR", accountTitle: "Muhammad Qasim", accountNumber: "03163273012", minAmount: "200" };
+  const steps = "Send the amount to the account above, then enter the transaction ID (TID) and upload a screenshot of the receipt.";
+  await db.insert(paymentMethods).values([
+    { ...wallet, name: "JazzCash", brand: "jazzcash", instructions: steps, sort: 0 },
+    { ...wallet, name: "Easypaisa", brand: "easypaisa", instructions: steps, sort: 1 },
+    { ...wallet, name: "SadaPay", brand: "sadapay", instructions: steps, sort: 2 },
+    { ...wallet, name: "NayaPay", brand: "nayapay", instructions: steps, sort: 3 },
+    { ...wallet, name: "Raast ID", brand: "raast", instructions: "Send through Raast from any bank app to the Raast ID above. " + steps, sort: 4 },
+    {
+      name: "Binance Pay",
+      kind: "binance_pay",
+      brand: "binance",
+      currency: "USD",
+      minAmount: "1",
+      instructions: "Send USDT with Binance Pay to the Pay ID above, then enter the Order ID from the payment details.",
+      status: "disabled", // turned on once the admin adds their Pay ID
+      sort: 5,
+    },
+  ]);
+  // Methods exist now, so open the Add funds page.
+  await db.insert(settings).values({ key: "features.addFunds", value: true }).onDuplicateKeyUpdate({ set: { value: true } });
 }
 
 const tiers = [

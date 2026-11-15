@@ -18,6 +18,7 @@ import { ordersRouter } from "./routes/orders";
 import { v2Router } from "./routes/v2";
 import { notificationsRouter, ticketsRouter } from "./routes/support";
 import { securityRouter } from "./routes/security";
+import { paymentsRouter } from "./routes/payments";
 import { affiliatesRouter, childPanelsRouter, couponsRouter } from "./routes/growth";
 
 export function createApp() {
@@ -61,6 +62,7 @@ export function createApp() {
   api.use("/security", securityRouter);
   api.use("/affiliates", affiliatesRouter);
   api.use("/coupons", couponsRouter);
+  api.use("/payments", paymentsRouter);
   api.use("/child-panels", childPanelsRouter);
   api.use("/admin", adminRouter);
   api.use("/", publicRouter);

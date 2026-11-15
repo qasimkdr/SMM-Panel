@@ -17,7 +17,10 @@ import {
   Server,
   Settings,
   Users,
+  Wallet,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import type { Permission } from "@smm/shared";
 import { Shell, type NavItem } from "@/components/dashboard/shell";
 import { useMe } from "@/lib/hooks/queries";
@@ -26,6 +29,7 @@ const nav: (NavItem & { perm?: Permission })[] = [
   { href: "/", label: "Overview", icon: LayoutDashboard, group: "Business" },
   { href: "/orders", label: "Orders", icon: ListOrdered, group: "Business", perm: "orders" },
   { href: "/tickets", label: "Support tickets", icon: LifeBuoy, group: "Business", perm: "support" },
+  { href: "/payments", label: "Payments", icon: Wallet, group: "Business", perm: "payments" },
   { href: "/users", label: "Users", icon: Users, group: "Business", perm: "users" },
   { href: "/affiliates", label: "Affiliates", icon: Gift, group: "Business", perm: "users" },
   { href: "/child-panels", label: "Child panels", icon: Globe, group: "Business", perm: "users" },
@@ -44,7 +48,14 @@ const nav: (NavItem & { perm?: Permission })[] = [
 export function AdminShell({ children, siteName }: { children: React.ReactNode; siteName: string }) {
   const { data: me } = useMe();
   // Staff only see what they're allowed to use (the API enforces the same rules).
-  const items = nav.filter((n) => !n.perm || !me || me.role === "admin" || (me.permissions ?? []).includes(n.perm));
+  const can = (perm?: Permission) => !perm || !me || me.role === "admin" || (me.permissions ?? []).includes(perm);
+  const summary = useQuery({
+    queryKey: ["admin", "payments-summary"],
+    queryFn: () => api<{ pending: number }>("/admin/payments/summary"),
+    enabled: Boolean(me) && can("payments"),
+    refetchInterval: 60_000,
+  });
+  const items = nav.filter((n) => can(n.perm)).map((n) => (n.href === "/payments" ? { ...n, count: summary.data?.pending } : n));
   return (
     <Shell siteName={siteName} nav={items} homeHref="/" badge="Admin" logoutTo="/login">
       {children}

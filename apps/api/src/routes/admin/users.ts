@@ -1,7 +1,8 @@
 import { Router } from "express";
+import { hash } from "@node-rs/argon2";
 import { z } from "zod";
 import { and, count, desc, eq, like, lt, or, schema, sql, type SQL } from "@smm/db";
-import { fromMicros, markupSchema, PERMISSIONS, toMicros } from "@smm/shared";
+import { fromMicros, markupSchema, passwordSchema, PERMISSIONS, toMicros } from "@smm/shared";
 import { db } from "../../lib/db";
 import { redis } from "../../lib/redis";
 import { invalidate } from "../../lib/cache";
@@ -39,13 +40,16 @@ adminUsersRouter.get("/", async (req, res) => {
   if (q.q) {
     const n = Number(q.q);
     const term = `${q.q.replace(/[%_]/g, "\\$&")}%`; // prefix search uses the unique indexes
-    conds.push(or(like(schema.users.email, term), like(schema.users.username, term), ...(Number.isInteger(n) ? [eq(schema.users.id, n)] : []))!);
+    conds.push(
+      or(like(schema.users.email, term), like(schema.users.username, term), like(schema.users.name, term), ...(Number.isInteger(n) ? [eq(schema.users.id, n)] : []))!,
+    );
   }
   const rows = await db
     .select({
       id: schema.users.id,
       username: schema.users.username,
       email: schema.users.email,
+      name: schema.users.name,
       role: schema.users.role,
       status: schema.users.status,
       balance: schema.users.balance,
@@ -167,6 +171,138 @@ adminUsersRouter.post("/:id/balance", async (req, res) => {
   });
   await audit(req, `user.balance.${input.action}`, "user", userId, { amount: input.amount, note: input.note });
   res.json({ ok: true, ...result });
+});
+
+/** Set a new password for a customer (e.g. they lost access to their email). Signs them out everywhere. */
+adminUsersRouter.post("/:id/password", async (req, res) => {
+  const id = idParam(req.params.id);
+  const { password } = parse(z.object({ password: passwordSchema }), req.body);
+  const [u] = await db.select({ role: schema.users.role }).from(schema.users).where(eq(schema.users.id, id)).limit(1);
+  if (!u) throw notFound("User not found");
+  if (u.role !== "user" && req.auth!.role !== "admin") throw forbidden("Only admins can change a staff or admin password");
+  await db.update(schema.users).set({ passwordHash: await hash(password) }).where(eq(schema.users.id, id));
+  await revokeAll(id);
+  await audit(req, "user.password_set", "user", id); // never log the password itself
+  res.json({ ok: true });
+});
+
+/**
+ * Full history for support: one list per kind, cursor-paginated (newest first).
+ * kinds: payments, transactions (balance ledger), orders, tickets, logins, admin (actions taken on this user).
+ */
+adminUsersRouter.get("/:id/history/:kind", async (req, res) => {
+  const id = idParam(req.params.id);
+  const kind = z.enum(["payments", "transactions", "orders", "tickets", "logins", "admin"]).parse(req.params.kind);
+  const cursor = parse(z.object({ cursor: z.coerce.number().int().positive().optional() }), req.query).cursor;
+  const page = 30;
+  let rows: { id: number }[];
+  switch (kind) {
+    case "payments":
+      rows = await db
+        .select({
+          id: schema.payments.id,
+          method: schema.paymentMethods.name,
+          amount: schema.payments.amount,
+          amountLocal: schema.payments.amountLocal,
+          currency: schema.payments.currency,
+          txnId: schema.payments.externalId,
+          status: schema.payments.status,
+          adminNote: schema.payments.adminNote,
+          createdAt: schema.payments.createdAt,
+        })
+        .from(schema.payments)
+        .leftJoin(schema.paymentMethods, eq(schema.paymentMethods.id, schema.payments.methodId))
+        .where(and(eq(schema.payments.userId, id), ...(cursor ? [lt(schema.payments.id, cursor)] : [])))
+        .orderBy(desc(schema.payments.id))
+        .limit(page + 1);
+      break;
+    case "transactions":
+      rows = await db
+        .select({
+          id: schema.transactions.id,
+          type: schema.transactions.type,
+          amount: schema.transactions.amount,
+          balanceAfter: schema.transactions.balanceAfter,
+          note: schema.transactions.note,
+          refType: schema.transactions.refType,
+          refId: schema.transactions.refId,
+          actor: schema.users.username,
+          createdAt: schema.transactions.createdAt,
+        })
+        .from(schema.transactions)
+        .leftJoin(schema.users, eq(schema.users.id, schema.transactions.actorId))
+        .where(and(eq(schema.transactions.userId, id), ...(cursor ? [lt(schema.transactions.id, cursor)] : [])))
+        .orderBy(desc(schema.transactions.id))
+        .limit(page + 1);
+      break;
+    case "orders":
+      rows = await db
+        .select({
+          id: schema.orders.id,
+          service: schema.services.name,
+          link: schema.orders.link,
+          quantity: schema.orders.quantity,
+          charge: schema.orders.charge,
+          status: schema.orders.status,
+          remains: schema.orders.remains,
+          createdAt: schema.orders.createdAt,
+        })
+        .from(schema.orders)
+        .leftJoin(schema.services, eq(schema.services.id, schema.orders.serviceId))
+        .where(and(eq(schema.orders.userId, id), ...(cursor ? [lt(schema.orders.id, cursor)] : [])))
+        .orderBy(desc(schema.orders.id))
+        .limit(page + 1);
+      break;
+    case "tickets":
+      rows = await db
+        .select({ id: schema.tickets.id, subject: schema.tickets.subject, topic: schema.tickets.topic, status: schema.tickets.status, createdAt: schema.tickets.createdAt, lastReplyAt: schema.tickets.lastReplyAt })
+        .from(schema.tickets)
+        .where(and(eq(schema.tickets.userId, id), ...(cursor ? [lt(schema.tickets.id, cursor)] : [])))
+        .orderBy(desc(schema.tickets.id))
+        .limit(page + 1);
+      break;
+    case "logins":
+      rows = await db
+        .select({ id: schema.loginEvents.id, ip: schema.loginEvents.ip, userAgent: schema.loginEvents.userAgent, success: schema.loginEvents.success, createdAt: schema.loginEvents.createdAt })
+        .from(schema.loginEvents)
+        .where(and(eq(schema.loginEvents.userId, id), ...(cursor ? [lt(schema.loginEvents.id, cursor)] : [])))
+        .orderBy(desc(schema.loginEvents.id))
+        .limit(page + 1);
+      break;
+    case "admin":
+      rows = await db
+        .select({ id: schema.adminLogs.id, action: schema.adminLogs.action, meta: schema.adminLogs.meta, actor: schema.users.username, createdAt: schema.adminLogs.createdAt })
+        .from(schema.adminLogs)
+        .leftJoin(schema.users, eq(schema.users.id, schema.adminLogs.actorId))
+        .where(and(eq(schema.adminLogs.targetType, "user"), eq(schema.adminLogs.targetId, String(id)), ...(cursor ? [lt(schema.adminLogs.id, cursor)] : [])))
+        .orderBy(desc(schema.adminLogs.id))
+        .limit(page + 1);
+      break;
+  }
+  res.set("Cache-Control", "private, no-store");
+  res.json({ items: rows.slice(0, page), nextCursor: rows.length > page ? rows[page - 1]!.id : null });
+});
+
+/** Totals for the history page header. */
+adminUsersRouter.get("/:id/summary", async (req, res) => {
+  const id = idParam(req.params.id);
+  const sumWhere = (type: string) => sql<string>`COALESCE(SUM(CASE WHEN ${schema.transactions.type} = ${type} THEN ${schema.transactions.amount} END), 0)`;
+  const [[tx], byStatus] = await Promise.all([
+    db
+      .select({
+        deposits: sumWhere("deposit"),
+        adminAdded: sumWhere("admin_add"),
+        adminDeducted: sumWhere("admin_deduct"),
+        orders: sumWhere("order"),
+        refunds: sumWhere("refund"),
+        bonuses: sql<string>`COALESCE(SUM(CASE WHEN ${schema.transactions.type} IN ('coupon','bonus','affiliate_commission') THEN ${schema.transactions.amount} END), 0)`,
+      })
+      .from(schema.transactions)
+      .where(eq(schema.transactions.userId, id)),
+    db.select({ status: schema.orders.status, n: count() }).from(schema.orders).where(eq(schema.orders.userId, id)).groupBy(schema.orders.status),
+  ]);
+  res.set("Cache-Control", "private, no-store");
+  res.json({ ...tx, ordersByStatus: Object.fromEntries(byStatus.map((r) => [r.status, r.n])) });
 });
 
 adminUsersRouter.post("/:id/logout-all", async (req, res) => {

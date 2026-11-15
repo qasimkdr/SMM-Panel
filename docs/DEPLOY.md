@@ -342,3 +342,11 @@ Most settings never need the server. Name, SEO, sign-ups, features, commission, 
 - Payment gateways (Add funds is "Coming soon"; top up customers manually in Admin → Users).
 - Telegram bot and alerts.
 - Automated deployment of child panels: billing and renewals are automatic, but setting up the copy on the customer's domain is a manual step.
+
+## Binance Pay automatic check (optional)
+1. Binance app → Profile → **API Management** → **Create API** → **System generated**. Name it `panel`.
+2. Leave only **Enable Reading** ticked. Never enable trading, withdrawals or transfers.
+3. Copy the API key and Secret key.
+4. Admin → Payments → Payment methods → Binance Pay → Edit. Enter your **Binance Pay ID**, paste both keys, switch
+   **Show to customers** on, Save.
+Without keys the method still works; deposits wait for you to check them by hand.

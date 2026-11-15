@@ -181,6 +181,60 @@ function TwoFactor({ data }: { data: SecurityData }) {
   );
 }
 
+function ChangePassword({ hasPassword }: { hasPassword: boolean }) {
+  const qc = useQueryClient();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [mismatch, setMismatch] = useState(false);
+  const m = useMutation({
+    mutationFn: () => api("/security/password", { method: "POST", json: { currentPassword: hasPassword ? current : undefined, newPassword: next } }),
+    onSuccess: () => {
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+      qc.invalidateQueries({ queryKey: ["security"] });
+    },
+  });
+  const fields = m.error instanceof ApiError ? (m.error.fields ?? {}) : {};
+  return (
+    <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-5 shadow-1 sm:p-6">
+      <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+        <KeyRound className="size-4 text-ink-3" aria-hidden /> {hasPassword ? "Change password" : "Set a password"}
+      </h2>
+      <p className="mt-1 text-[14px] text-ink-3">
+        {hasPassword ? "You'll stay signed in here. Every other device is signed out." : "Add a password so you can also sign in with your email."}
+      </p>
+      <form
+        className="mt-4 grid gap-4 sm:grid-cols-3 sm:items-start"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (next !== confirm) return setMismatch(true);
+          setMismatch(false);
+          m.mutate();
+        }}
+      >
+        {hasPassword && <PasswordField label="Current password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" error={fields.currentPassword} />}
+        <PasswordField label="New password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" error={fields.newPassword} hint="At least 8 characters." />
+        <PasswordField
+          label="Repeat new password"
+          value={confirm}
+          onChange={(e) => (setConfirm(e.target.value), setMismatch(false))}
+          autoComplete="new-password"
+          error={mismatch ? "The passwords don't match" : undefined}
+        />
+        <div className="grid gap-3 sm:col-span-3">
+          <FormAlert tone="success" message={m.isSuccess ? "Password changed. Other devices were signed out." : null} />
+          <FormAlert message={m.error instanceof ApiError && !m.error.fields ? m.error.message : null} />
+          <Button type="submit" loading={m.isPending} disabled={(hasPassword && !current) || !next || !confirm} className="justify-self-start">
+            {hasPassword ? "Change password" : "Set password"}
+          </Button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 export function SecurityPage() {
   const qc = useQueryClient();
   const toast = useToast();
@@ -196,11 +250,12 @@ export function SecurityPage() {
 
   return (
     <>
-      <PageHeader title="Security" description="Two-factor sign-in, where you're signed in, and which emails you get." />
+      <PageHeader title="Security" description="Your password, two-factor sign-in, where you're signed in, and which emails you get." />
       {isLoading || !data ? (
         <Skeleton className="h-96" />
       ) : (
         <div className="grid gap-5 [&>*]:min-w-0">
+          <ChangePassword hasPassword={data.hasPassword} />
           <TwoFactor data={data} />
 
           <div className="grid gap-5 lg:grid-cols-2">

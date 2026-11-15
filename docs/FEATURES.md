@@ -322,12 +322,21 @@ Then P3: child panels, blog, subscriptions/auto-likes, automatic start-count fet
 * Notification center plus email preferences.
 * Account security: sessions list with remote logout, login alerts, 2FA, account deletion.
 * PWA (installable on phone), light/dark theme, multi-language with RTL.
-* Add funds: **"Coming soon" page for now** (admin manual top-up meanwhile).
+* Add funds (**built**): manual wallets (JazzCash, Easypaisa, SadaPay, NayaPay, Raast ID) with transaction ID +
+  screenshot, reviewed by staff under Admin → Payments; Binance Pay with optional automatic confirmation (read-only
+  API key checks the Order ID against the owner's Pay history; only dollar stablecoins are auto-credited).
+  A transaction ID can only be used once. Up to 5 pending deposits per customer.
+* WhatsApp: 3D "Pay another way" card on Add funds plus a floating button in the dashboard (settings
+  `support.whatsapp`, `support.whatsappMessage`, `support.whatsappFloating`).
+* Customers change their password under Password & security (other devices are signed out).
 
 ### Admin extras
 * Global admin search (user, order ID, link, payment ID).
 * User notes and tags, ban with reason, IP/device history, multi-account detection.
-* Manual balance add/deduct (essential while add funds is coming soon).
+* Manual balance add/deduct.
+* Set a new password for a customer (signs them out everywhere; logged as `user.password_set`).
+* User search by name, email, username or ID; full user history page (deposits, balance ledger, orders, tickets,
+  sign-ins, staff actions) with totals.
 * Price history per service; bulk price updates by category or provider.
 * Provider health score (error rate, speed); automatic switch to the backup provider.
 * Link and keyword blocklist (refuse orders for certain links).
@@ -342,7 +351,7 @@ Then P3: child panels, blog, subscriptions/auto-likes, automatic start-count fet
 * GA4 / Meta Pixel / custom head-code slots.
 
 ### Deferred (owner decision)
-* Payment gateways / add funds: coming soon.
+* Card/crypto gateways with webhooks (Stripe, Cryptomus…): not yet; manual + Binance Pay are live.
 * Telegram bot and Telegram alerts: later.
 
 ---
