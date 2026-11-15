@@ -55,3 +55,11 @@ test("orderCharge + mass parse", () => {
   assert.equal(orderCharge("package", "4.5", 1), "4.500000");
   assert.deepEqual(parseMassOrder("5 | https://a | 100\n\n6|b|200")[1], { line: 2, raw: "6|b|200", service: 6, link: "b", quantity: 200 });
 });
+
+import { slugify } from "./providers";
+
+test("slugify: fancy Unicode letters become plain lowercase", () => {
+  assert.equal(slugify("TikTok » 𝐕𝐢𝐞𝐰𝐬 – 𝐑𝐞𝐚𝐥 𝐒𝐩𝐨𝐧𝐬𝐨𝐫 𝐀𝐝𝐬 🇵🇰"), "tiktok-views-real-sponsor-ads");
+  assert.equal(slugify("Café Ünïcode"), "cafe-unicode");
+  assert.equal(slugify("🔥🔥"), "category");
+});

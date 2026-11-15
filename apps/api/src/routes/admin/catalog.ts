@@ -35,7 +35,7 @@ categoriesRouter.get("/", async (_req, res) => {
 async function uniqueSlug(name: string, exceptId?: number) {
   const base = slugify(name);
   const rows = await db.select({ id: schema.categories.id, slug: schema.categories.slug }).from(schema.categories).where(like(schema.categories.slug, `${base}%`));
-  const taken = new Set(rows.filter((r) => r.id !== exceptId).map((r) => r.slug));
+  const taken = new Set(rows.filter((r) => r.id !== exceptId).map((r) => r.slug.toLowerCase())); // MySQL compares case-insensitively
   let slug = base;
   for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
   return slug;

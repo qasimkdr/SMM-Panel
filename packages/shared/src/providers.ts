@@ -108,11 +108,15 @@ export function guessPlatform(name: string): string {
   return "other";
 }
 
+/**
+ * URL-safe slug. Normalize BEFORE lowercasing: providers use "fancy" Unicode letters (𝐕𝐢𝐞𝐰𝐬) that NFKD turns
+ * into plain capitals, and MySQL compares slugs case-insensitively, so the result must be fully lowercase.
+ */
 export function slugify(s: string): string {
   return (
     s
-      .toLowerCase()
       .normalize("NFKD")
+      .toLowerCase()
       .replace(/[^\w\s-]/g, "")
       .trim()
       .replace(/[\s_-]+/g, "-")

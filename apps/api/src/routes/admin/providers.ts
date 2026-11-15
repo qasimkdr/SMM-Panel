@@ -191,7 +191,8 @@ providersRouter.post("/:id/import", async (req, res) => {
   // Resolve categories (create missing ones by name, matching existing names case-insensitively).
   const cats = await db.select({ id: schema.categories.id, name: schema.categories.name, slug: schema.categories.slug }).from(schema.categories);
   const byName = new Map(cats.map((c) => [c.name.toLowerCase(), c.id]));
-  const slugs = new Set(cats.map((c) => c.slug));
+  // Lowercased: MySQL compares slugs case-insensitively, so our duplicate check must too.
+  const slugs = new Set(cats.map((c) => c.slug.toLowerCase()));
   const [{ maxSort }] = (await db.select({ maxSort: sql<number>`COALESCE(MAX(${schema.categories.sort}), 0)` }).from(schema.categories)) as [{ maxSort: number }];
   let sort = Number(maxSort);
 
@@ -200,13 +201,24 @@ providersRouter.post("/:id/import", async (req, res) => {
     const name = rawName.trim().slice(0, 120) || "Imported";
     const hit = byName.get(name.toLowerCase());
     if (hit) return hit;
-    let slug = slugify(name);
-    for (let n = 2; slugs.has(slug); n++) slug = `${slugify(name)}-${n}`;
-    slugs.add(slug);
-    const [r] = await db.insert(schema.categories).values({ name, slug, platform: guessPlatform(name), sort: ++sort });
-    const newId = Number(r.insertId);
-    byName.set(name.toLowerCase(), newId);
-    return newId;
+    const base = slugify(name).slice(0, 130);
+    let n = 1;
+    // Safety net: if the slug still collides (accents, emoji-only names…), add -2, -3… instead of failing the import.
+    for (;;) {
+      let slug = n === 1 ? base : `${base}-${n}`;
+      while (slugs.has(slug)) slug = `${base}-${++n}`;
+      slugs.add(slug);
+      try {
+        const [r] = await db.insert(schema.categories).values({ name, slug, platform: guessPlatform(name), sort: ++sort });
+        const newId = Number(r.insertId);
+        byName.set(name.toLowerCase(), newId);
+        return newId;
+      } catch (e) {
+        const dup = (e as { cause?: { code?: string } }).cause?.code === "ER_DUP_ENTRY";
+        if (!dup || n > 50) throw e;
+        n++;
+      }
+    }
   }
 
   const rows: (typeof schema.services.$inferInsert)[] = [];

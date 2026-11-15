@@ -13,6 +13,11 @@ const services = [
   { service: 202, name: "TikTok Followers [HQ]", type: "Default", category: "TikTok Followers", rate: "2.10", min: "100", max: "100000", refill: true, cancel: false },
   { service: 301, name: "YouTube Views [Non-drop]", type: "Default", category: "YouTube Views", rate: "1.25", min: "500", max: "1000000", refill: true, cancel: false },
   { service: 401, name: "Telegram Post Views", type: "Default", category: "Telegram", rate: "0.02", min: "100", max: "500000", refill: false, cancel: false },
+  // Same category written in plain and in "fancy" Unicode letters (slug clash case).
+  { service: 601, name: "TikTok Views Sponsor Ads", type: "Default", category: "TikTok » Views – Real Sponsor Ads", rate: "0.05", min: "100", max: "1000000", refill: false, cancel: false },
+  { service: 602, name: "𝐓𝐢𝐤𝐓𝐨𝐤 Views PK", type: "Default", category: "TikTok » 𝐕𝐢𝐞𝐰𝐬 – 𝐑𝐞𝐚𝐥 𝐒𝐩𝐨𝐧𝐬𝐨𝐫 𝐀𝐝𝐬 🇵🇰", rate: "0.06", min: "100", max: "1000000", refill: false, cancel: false },
+  { service: 603, name: "Emoji only category", type: "Default", category: "🔥🔥", rate: "0.06", min: "100", max: "1000000", refill: false, cancel: false },
+  { service: 604, name: "Emoji only category 2", type: "Default", category: "⚡⚡", rate: "0.06", min: "100", max: "1000000", refill: false, cancel: false },
   // Real-world edge cases: huge max, very long category name with emoji, odd numbers.
   { service: 501, name: "Website Traffic 🇮🇳 [Unlimited]", type: "Default", category: "Website Traffic » Worldwide 🌍 [ Google / Facebook / Instagram / YouTube referrers ] — Organic · Direct · Social — Premium quality, real visitors", rate: "0.0004", min: "1000", max: "10000000000", refill: false, cancel: true },
 ];
