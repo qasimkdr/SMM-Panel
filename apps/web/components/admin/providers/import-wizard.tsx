@@ -91,17 +91,31 @@ export function ImportWizard() {
       return next;
     });
 
+  // Everything currently shown (after search/category/hide-imported filters) that can still be imported.
+  const selectableVisible = useMemo(() => visible.flatMap(([, list]) => list.filter((i) => !i.importedAs).map((i) => i.service)), [visible]);
+  const allVisibleSelected = selectableVisible.length > 0 && selectableVisible.every((s) => selected.has(s));
+
   const doImport = useMutation({
-    mutationFn: () =>
-      api<{ imported: number; skipped: number }>(`/admin/providers/${id}/import`, {
-        method: "POST",
-        json: {
-          items: [...selected].map((service) => (destination === "provider" ? { service } : { service, categoryId: Number(destination) })),
-          keepProviderCategories: destination === "provider",
-        },
-      }),
+    // Imports the given IDs, or the current selection. The API takes up to 2,000 per request, so big lists go in chunks.
+    mutationFn: async (ids?: string[]) => {
+      const all = ids ?? [...selected];
+      let imported = 0;
+      let skipped = 0;
+      for (let i = 0; i < all.length; i += 1000) {
+        const r = await api<{ imported: number; skipped: number }>(`/admin/providers/${id}/import`, {
+          method: "POST",
+          json: {
+            items: all.slice(i, i + 1000).map((service) => (destination === "provider" ? { service } : { service, categoryId: Number(destination) })),
+            keepProviderCategories: destination === "provider",
+          },
+        });
+        imported += r.imported;
+        skipped += r.skipped;
+      }
+      return { imported, skipped };
+    },
     onSuccess: (r) => {
-      toast(`Imported ${r.imported} service${r.imported === 1 ? "" : "s"}${r.skipped ? ` (${r.skipped} skipped: already imported)` : ""}. Prices include your commission.`);
+      toast(`Imported ${r.imported} service${r.imported === 1 ? "" : "s"}${r.skipped ? ` (${r.skipped} skipped: already imported)` : ""}. They're live for customers, with your commission added.`);
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["admin"] });
     },
@@ -150,6 +164,36 @@ export function ImportWizard() {
           <Switch checked={hideImported} onChange={setHideImported} label="Hide imported" />
         </div>
       </div>
+
+      {selectableVisible.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-lg)] border border-accent-line bg-accent-soft px-4 py-3">
+          <p className="text-[14px] text-ink-2">
+            <span className="tabular font-semibold text-ink">{selectableVisible.length}</span> service{selectableVisible.length === 1 ? "" : "s"} shown that you haven&apos;t imported
+            {group !== "all" || q ? " (matching your filter)" : ""}.
+          </p>
+          <div className="flex gap-2">
+            {allVisibleSelected ? (
+              <Button variant="ghost" size="sm" onClick={() => toggle(selectableVisible, false)}>
+                Unselect all
+              </Button>
+            ) : (
+              <Button variant="secondary" size="sm" onClick={() => toggle(selectableVisible, true)}>
+                Select all {selectableVisible.length}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              loading={doImport.isPending}
+              onClick={() => {
+                setSelected(new Set(selectableVisible));
+                doImport.mutate(selectableVisible);
+              }}
+            >
+              <Download className="size-3.5" aria-hidden /> Import all {selectableVisible.length}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="mt-5 space-y-4">
         {catalog.isLoading ? (
