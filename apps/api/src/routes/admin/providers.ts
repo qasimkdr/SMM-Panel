@@ -14,6 +14,9 @@ import { audit } from "../../services/audit";
 
 export const providersRouter = Router();
 
+/** Quantities must fit our INT columns; providers sometimes send "unlimited" (e.g. 10,000,000,000). */
+const clampQty = (n: number) => Math.min(1_000_000_000, Math.max(1, Math.trunc(Number(n) || 1)));
+
 type Cached = { fetchedAt: string; items: (ProviderServiceItem & { rateUsd: string })[] };
 const catalogKey = (id: number) => `provider:${id}:catalog`;
 const idParam = (v: unknown) => {
@@ -192,7 +195,9 @@ providersRouter.post("/:id/import", async (req, res) => {
   const [{ maxSort }] = (await db.select({ maxSort: sql<number>`COALESCE(MAX(${schema.categories.sort}), 0)` }).from(schema.categories)) as [{ maxSort: number }];
   let sort = Number(maxSort);
 
-  async function categoryFor(name: string) {
+  async function categoryFor(rawName: string) {
+    // Provider category names can be longer than our column (120); trim instead of failing the whole import.
+    const name = rawName.trim().slice(0, 120) || "Imported";
     const hit = byName.get(name.toLowerCase());
     if (hit) return hit;
     let slug = slugify(name);
@@ -223,8 +228,8 @@ providersRouter.post("/:id/import", async (req, res) => {
       providerServiceId: item.service,
       providerRate: item.rateUsd,
       sellRate: item.rateUsd, // replaced by recompute below
-      minQty: item.min,
-      maxQty: Math.max(item.min, item.max),
+      minQty: clampQty(item.min),
+      maxQty: clampQty(Math.max(item.min, item.max)),
       refill: item.refill,
       cancel: item.cancel,
       dripfeed: item.dripfeed,

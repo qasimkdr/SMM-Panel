@@ -1,5 +1,8 @@
 import { normalizeProviderStatus, normalizeServiceType, type ProviderServiceItem } from "@smm/shared";
 import { providerRequest, toBool, toInt, toRate } from "./http";
+
+const MAX_QTY = 1_000_000_000;
+const clampQty = (n: number) => Math.min(MAX_QTY, Math.max(1, n));
 import { ProviderError, type AddOrderParams, type ProviderDriver, type ProviderOrderStatus } from "./types";
 
 /**
@@ -21,10 +24,11 @@ export class V2Driver implements ProviderDriver {
       service: String(raw.service ?? raw.id ?? ""),
       name: String(raw.name ?? "").trim(),
       type: normalizeServiceType(raw.type),
-      category: String(raw.category ?? "Other").trim(),
+      category: String(raw.category ?? "Other").trim().slice(0, 120) || "Other",
       rate: toRate(raw.rate),
-      min: toInt(raw.min) ?? 1,
-      max: toInt(raw.max) ?? 1,
+      // Providers sometimes send "unlimited" maximums (e.g. 10,000,000,000); keep them within what we store.
+      min: clampQty(toInt(raw.min) ?? 1),
+      max: clampQty(toInt(raw.max) ?? 1),
       refill: toBool(raw.refill),
       cancel: toBool(raw.cancel),
       dripfeed: toBool(raw.dripfeed),
